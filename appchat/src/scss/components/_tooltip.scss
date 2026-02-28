@@ -1,0 +1,10 @@
+// 
+// Tooltip
+// 
+
+// Enable shadows
+.tooltip {
+    .tooltip-inner {
+        box-shadow: $tooltip-box-shadow;
+    }
+}

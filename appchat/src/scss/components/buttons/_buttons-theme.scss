@@ -1,0 +1,198 @@
+// 
+// Buttons theme
+// 
+
+// Button variants
+@each $name, $value in $theme-colors {
+    
+	// Base colors
+    .btn.btn-#{$name} {
+		$btn-color: get-inverse-color($name);
+		$btn-icon-color: get-inverse-color($name);
+		$btn-border-color: $value;
+		$btn-bg-color: $value;
+
+		$btn-color-active: get-inverse-color($name);
+		$btn-icon-color-active: get-inverse-color($name);
+		$btn-border-color-active: get-active-color($name);
+		$btn-bg-color-active: get-active-color($name);
+
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+    
+    // Soft colors
+	@if (get-soft-color($name)) {
+		.btn.btn-soft-#{$name} {
+			$btn-color: $value;
+			$btn-icon-color: $value;
+			$btn-border-color: get-soft-color($name);
+			$btn-bg-color: get-soft-color($name);
+         
+			$btn-color-active: get-inverse-color($name);
+			$btn-icon-color-active: get-inverse-color($name);
+			$btn-border-color-active: $value;
+			$btn-bg-color-active: $value;
+	
+			@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+		}
+	}
+
+	// Outline button
+	.btn.btn-outline-#{$name} {
+		$btn-color: get-active-color($name);
+		$btn-icon-color: get-active-color($name);
+		$btn-border-color: $value;
+		$btn-bg-color: null;
+
+		$btn-color-active: get-inverse-color($name);
+		$btn-icon-color-active: get-inverse-color($name);
+		$btn-border-color-active: $value;
+		$btn-bg-color-active: $value;
+
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+}
+
+@each $name, $value in $theme-colors {
+		
+	// Hover background
+	.btn.btn-hover-#{$name} {
+		$btn-color: null;
+		$btn-icon-color: null;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+
+		$btn-color-active: get-inverse-color($name);
+		$btn-icon-color-active: get-inverse-color($name);
+		$btn-border-color-active: $value;
+		$btn-bg-color-active: $value;
+
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+	
+	//  Hover soft background
+	@if (get-soft-color($name)) {
+		.btn.btn-hover-soft-#{$name} {
+			$btn-color: null;
+			$btn-icon-color: null;
+			$btn-border-color: null;
+			$btn-bg-color: null;
+         
+			$btn-color-active: $value;
+			$btn-icon-color-active: $value;
+			$btn-border-color-active: get-soft-color($name);
+			$btn-bg-color-active: get-soft-color($name);
+	
+			@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+		}
+	}
+}
+
+// Button text and icons colors
+@each $name, $value in $theme-text-colors {
+	
+	// Both text and icon colors
+	.btn.btn-color-#{$name} {
+		$btn-color: $value ;
+		$btn-icon-color: $value ;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: null;
+		$btn-icon-color-active: null;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+
+	// Both text and icon hover colors
+	.btn.btn-hover-color-#{$name} {
+		$btn-color: null;
+		$btn-icon-color: null;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: $value ;
+		$btn-icon-color-active: $value ;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+	
+	// Text colors
+	.btn.btn-text-#{$name} {
+		$btn-color: $value ;
+		$btn-icon-color: null;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: null;
+		$btn-icon-color-active: null;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+
+	// Text hover colors
+	.btn.btn-hover-text-#{$name} {
+		$btn-color: null;
+		$btn-icon-color: null;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: $value ;
+		$btn-icon-color-active: null;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+	
+	// Icon colors
+	.btn.btn-icon-#{$name} {
+		$btn-color: null;
+		$btn-icon-color: $value ;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: null;
+		$btn-icon-color-active: null;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+	
+	// Icon hover colors
+	.btn.btn-hover-icon-#{$name} {
+		$btn-color: null;
+		$btn-icon-color: null;
+		$btn-border-color: null;
+		$btn-bg-color: null;
+		
+		$btn-color-active: null;
+		$btn-icon-color-active: $value ;
+		$btn-border-color-active: null;
+		$btn-bg-color-active: null;
+		
+		@include button-custom-variant($btn-color, $btn-icon-color, $btn-border-color, $btn-bg-color, $btn-color-active, $btn-icon-color-active, $btn-border-color-active, $btn-bg-color-active);
+	}
+}
+
+// Base button
+.btn.btn-base {
+	background-color: transparent;
+	border-color: transparent;
+	color: $gray-500;
+
+	i {
+		color: $gray-500;
+	}
+
+	.svg-icon {
+		@include svg-icon-color($gray-500);
+	}
+}

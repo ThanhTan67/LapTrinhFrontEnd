@@ -1,0 +1,28 @@
+// 
+// Type indicator
+// 
+
+.type-indicator {
+    display: inline-flex;
+
+    span {
+        height: rfs-value(3px);
+        width: rfs-value(3px);
+        margin: 0 rfs-value(1px);
+        background-color: #bbbbbb;
+        border-radius: 50%;
+        opacity: 0.4;
+
+        @for $nth from 1 through 3 {
+            &:nth-of-type(#{$nth}) {
+                animation: 1s blink infinite ($nth * .3333s);
+            }
+        }
+    }
+
+    @keyframes blink {
+        50% {
+            opacity: 1;
+        }
+    }
+}

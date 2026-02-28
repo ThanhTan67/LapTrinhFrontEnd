@@ -1,0 +1,23 @@
+// 
+// Sidebar
+// 
+
+.sidebar {
+    width: 100%;
+    background-color: $sidebar-bg;
+       
+    @include media-breakpoint-up(xl) {
+        flex-grow: 0;
+        flex-shrink: 0;
+        width: $sidebar-width;
+    }
+}
+
+// Tab header
+.tab-header {
+    min-height: $sidebar-header-height;
+}
+
+.invite-footer, .create-chat-footer {
+    min-height: $footer-panel-height;
+}

@@ -1,0 +1,34 @@
+// 
+// SVG icon
+// 
+
+.svg-icon {
+    display: inline-block;
+    line-height: 1;
+
+    @include svg-icon-color($text-muted, false);
+    @include svg-icon-size(1.25rem, false);
+
+    // Theme colors
+    @each $name, $color in $theme-text-colors {
+        &.svg-icon-#{$name} {
+            @include svg-icon-color($color, true);
+        }
+    }
+
+    // Responsive icon sizes
+    @each $breakpoint in map-keys($grid-breakpoints) {
+        $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+        @include media-breakpoint-up($breakpoint, $grid-breakpoints) {
+
+            // Sizes
+            @each $name,
+            $value in $font-sizes {
+                &.svg-size#{$infix}-#{$name} {
+                    @include svg-icon-size($value, false);
+                }
+            }
+        }
+    }
+}

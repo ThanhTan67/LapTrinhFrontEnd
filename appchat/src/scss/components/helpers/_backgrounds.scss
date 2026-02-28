@@ -1,0 +1,15 @@
+// 
+// Backgrounds
+// 
+
+// White background
+.bg-white {
+    background-color: get($theme-colors, "white")!important;
+}
+
+// Soft background colors 
+@each $color, $value in $theme-soft-colors {
+	.bg-soft-#{$color} {
+		background-color: $value !important;
+	}
+}

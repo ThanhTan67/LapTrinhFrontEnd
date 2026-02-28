@@ -1,0 +1,26 @@
+// 
+// Badge
+// 
+
+.badge {
+    // Badge circle
+    &.badge-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: $badge-width;
+        width: $badge-width;
+        border-radius: $border-radius-pill;
+        padding: 0;
+    }
+}
+
+// Bage soft color variants
+@each $name, $value in $theme-colors {
+    @if (get-soft-color($name)) {
+        .badge-soft-#{$name} {
+            color: $value !important;
+            background-color: get-soft-color($name);
+        }
+    }
+}

@@ -1,0 +1,24 @@
+// 
+// Contact list
+// 
+
+.card.contact-item {
+    position: relative;
+    border-radius: $border-radius-lg;
+    transition: all .2s ease;
+    
+    &.active {
+        border-color: $contact-item-active-border-color;
+        box-shadow: $contact-item-active-box-shadow;
+    }
+    
+    .contact-link {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
+    }
+}
+

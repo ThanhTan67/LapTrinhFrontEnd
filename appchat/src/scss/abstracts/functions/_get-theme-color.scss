@@ -1,0 +1,15 @@
+// 
+// Extended map-get functions
+// 
+
+@function get-inverse-color($key: "primary") {
+    @return get($theme-inverse-colors, $key);
+}
+
+@function get-active-color($key: "primary") {
+    @return get($theme-active-colors, $key);
+}
+
+@function get-soft-color($key: "primary") {
+    @return get($theme-soft-colors, $key);
+}

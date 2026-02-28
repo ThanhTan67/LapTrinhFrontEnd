@@ -1,0 +1,10 @@
+// 
+// if-important function
+// 
+
+@function if-important($important) {
+    @if $important {
+        @return #{"!important"}; 
+    }
+    @return null;
+}

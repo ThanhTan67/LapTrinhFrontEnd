@@ -1,0 +1,64 @@
+// 
+// Chat
+// 
+
+// Main content
+.main {
+    flex-grow: 1;
+    background-color: $main-bg;
+
+    @include media-breakpoint-down(xl) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: $zindex-fixed;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity .3s ease, visibility .3s ease;
+    }
+
+    &.main-visible {
+        visibility: visible;
+        opacity: 1;
+    }
+}
+
+// Chat footer and header
+.chat-header,
+.chat-footer {
+    min-height: $chat-panel-height;
+}
+
+// Chat info sidebar
+.chat-info {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    z-index: $zindex-fixed;
+    background-color: $chat-info-bg;
+
+    @include media-breakpoint-up(sm) {
+        position: fixed;
+        top: 0;
+        right: 0;
+        max-width: $chat-info-width;
+        min-width: $chat-info-width;
+    }
+
+    @include media-breakpoint-up(xxl) {
+        position: static;
+    }
+
+    &.chat-info-visible {
+        display: block;
+    }
+}
+
+// Chat info header
+.chat-info-header {
+    min-height: $chat-info-header-height;
+}

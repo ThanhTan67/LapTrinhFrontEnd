@@ -1,0 +1,10 @@
+// 
+// Border helpers
+// 
+
+// Border color variants
+@each $color, $value in $grays {
+	.border-gray-#{$color} {
+		border-color: $value !important;
+	}
+}

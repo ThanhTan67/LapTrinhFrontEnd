@@ -1,0 +1,706 @@
+//
+// Modified and extended Bootstrap variables.
+// To override any Bootstrap variable you can use _custom-variables.scss
+//
+
+// Bootstrap required
+@import "../../../node_modules/bootstrap/scss/functions";
+
+// Custom functions required
+@import "../abstracts/functions";
+
+// Custom variables override
+@import "custom-variables-dark";
+
+// Color system
+
+// Gray color variables
+$white:               #ffffff  !default;
+$gray-100:            #f6f7f9  !default;
+$gray-200:            #e9eaf1  !default;
+$gray-300:            #dee0e8  !default;
+$gray-400:            #ccd0dd  !default;
+$gray-500:            #abb0c1  !default;
+$gray-600:            #656e83  !default;
+$gray-700:            #454b5c  !default;
+$gray-800:            #343746  !default;
+$gray-900:            #22252f  !default;
+$black:               #1A1C23  !default;
+$text-muted:           $gray-500 !default;
+
+// Bootstrap gray colors map
+$grays: (
+    "100":              $gray-100,
+    "200":              $gray-200,
+    "300":              $gray-300,
+    "400":              $gray-400,
+    "500":              $gray-500,
+    "600":              $gray-600,
+    "700":              $gray-700,
+    "800":              $gray-800,
+    "900":              $gray-900,
+) !default;
+
+// Color variables
+$blue:                #058FFF !default;
+$indigo:              #6610F2 !default;
+$purple:              #6A6FEA !default;
+$pink:                #D63384 !default;
+$red:                 #F05564 !default;
+$orange:              #FD7E14 !default;
+$yellow:              #F8DD57 !default;
+$green:               #2BDAA8 !default;
+$teal:                #20C997 !default;
+$cyan:                #16CEF3 !default;
+
+// Theme color variables
+$primary:               $blue !default;
+$secondary:             $gray-800 !default;
+$success:               $green !default;
+$info:                  $purple !default;
+$warning:               $yellow !default;
+$danger:                $red !default;
+$light:                 $gray-900 !default;
+$dark:                  $gray-900 !default;
+
+// Theme color map
+$theme-colors: (
+    "primary":          $primary,
+    "secondary":        $secondary,
+    "success":          $success,
+    "info":             $info,
+    "warning":          $warning,
+    "danger":           $danger,
+    "light":            $light,
+    "dark":             $dark,
+    "white":            $black,
+) !default;
+
+// Theme soft colors
+$primary-soft:          shade-color($primary, 70%) !default;
+$success-soft:          shade-color($success, 70%) !default;
+$info-soft:             shade-color($info, 70%) !default;
+$warning-soft:          shade-color($warning, 70%) !default;
+$danger-soft:           shade-color($danger, 70%) !default;
+$dark-soft:             $gray-800 !default;
+
+// Theme soft color map
+$theme-soft-colors: (
+    "primary":          $primary-soft,
+    "success":          $success-soft,
+    "info":             $info-soft,
+    "warning":          $warning-soft,
+    "danger":           $danger-soft,
+    "dark":             $dark-soft,
+) !default;
+
+// Theme active colors
+$primary-active:        shade-color($primary, 6%) !default;
+$secondary-active:  	$gray-700 !default;
+$success-active:        shade-color($success, 6%) !default;
+$info-active:           shade-color($info, 8%) !default;
+$warning-active:        shade-color($warning, 4%) !default;
+$danger-active:         shade-color($danger, 6%) !default;
+$dark-active:           shade-color($dark, 6%) !default;
+$light-active:          $gray-800 !default;
+$white-active:    		$gray-900 !default;
+
+// Theme active color map
+$theme-active-colors: (
+    "primary":          $primary-active,
+    "secondary":        $secondary-active,
+    "success":          $success-active,
+    "info":             $info-active,
+    "warning":          $warning-active,
+    "danger":           $danger-active,
+    "dark":             $dark-active,
+    "light":            $light-active,
+    "white":            $white-active,
+) !default;
+
+// Theme inverse colors
+$primary-inverse:     #FFFFFF !default;
+$secondary-inverse:     $gray-500 !default;
+$success-inverse:     #FFFFFF !default;
+$info-inverse:        #FFFFFF !default;
+$warning-inverse:     #FFFFFF !default;
+$danger-inverse:      #FFFFFF !default;
+$dark-inverse:        #FFFFFF !default;
+$light-inverse:         $gray-500 !default;
+$white-inverse:    	    $gray-500 !default;
+
+// Theme inverse color map
+$theme-inverse-colors: (
+    "primary":          $primary-inverse,
+    "secondary":        $secondary-inverse,
+    "success":          $success-inverse,
+    "info":             $info-inverse,
+    "warning":          $warning-inverse,
+    "danger":           $danger-inverse,
+    "dark":             $dark-inverse,
+    "light":            $light-inverse,
+    "white":            $white-inverse,
+) !default;
+
+// Text colors
+$theme-text-colors: (
+    "primary":          $primary,
+    "secondary":        $secondary,
+    "success":          $success,
+    "info":             $info,
+    "warning":          $warning,
+    "danger":           $danger,
+    "dark":             $dark,
+    "light":            $light,
+    "white":            $white,
+    "gray-100":         $gray-100,
+    "gray-200":         $gray-200,
+    "gray-300":         $gray-300,
+    "gray-400":         $gray-400,
+    "gray-500":         $gray-500,
+    "gray-600":         $gray-600,
+    "gray-700":         $gray-700,
+    "gray-800":         $gray-800,
+    "gray-900":         $gray-900,
+    "muted":            $text-muted,
+) !default;
+
+
+// The contrast ratio to reach against white, to determine if color changes from "light" to "dark". Acceptable values for WCAG 2.0 are 3, 4.5 and 7.
+// See https://www.w3.org/TR/WCAG20/#visual-audio-contrast-contrast
+$min-contrast-ratio:   3 !default;
+
+// Options
+//
+// Quickly modify global styling by enabling or disabling optional features.
+
+$enable-smooth-scroll:                              true !default;
+$enable-negative-margins:                           true !default;
+
+// Spacing
+//
+// Control the default styling of most Bootstrap elements by modifying these
+// variables. Mostly focused on spacing.
+// You can add more entries to the $spacers map, should you need more variation.
+
+$spacer: 1rem !default;
+$spacers: (
+    0:  0,
+    1:  ($spacer * .25),  	// 4px
+    2:  ($spacer * .5),   	// 8px
+	3:  ($spacer * .75),  	// 12px
+	4:  ($spacer * 1),    	// 16px
+	5:  ($spacer * 1.25), 	// 20px
+	6:  ($spacer * 1.5),  	// 24px
+	7:  ($spacer * 1.75), 	// 28px
+	8:  ($spacer * 2),    	// 32px
+	9:  ($spacer * 2.25), 	// 36px
+	10: ($spacer * 2.5), 	// 40px
+	11: ($spacer * 2.75),	// 44px
+	12: ($spacer * 3),   	// 48px
+	13: ($spacer * 3.25),	// 52px
+	14: ($spacer * 3.5), 	// 56px
+	15: ($spacer * 3.75), 	// 60px
+	16: ($spacer * 4), 		// 64px
+	17: ($spacer * 4.25), 	// 68px
+	18: ($spacer * 4.5), 	// 72px
+	19: ($spacer * 4.75), 	// 76px
+	20: ($spacer * 5), 		// 80px
+) !default;
+
+// Position
+//
+// Define the edge positioning anchors of the position utilities.
+
+$position-values: (
+  0:    0,
+  25:   25%,
+  50:   50%,
+  75:   75%,
+  100:  100%,
+) !default;
+
+// Body
+//
+// Settings for the `<body>` element.
+
+$body-bg:                                           $black !default;
+$body-color:                                        $gray-200 !default;
+
+// Links
+//
+// Style anchor elements.
+
+$link-color:                                        $primary !default;
+$link-decoration:                                   none !default;
+$link-hover-decoration:                             underline !default;
+
+// Gutters
+$gutters: (
+    0:  0,
+    1:  ($spacer * .25),  	// 4px
+    2:  ($spacer * .5),   	// 8px
+	3:  ($spacer * .75),  	// 12px
+	4:  ($spacer * 1),    	// 16px
+	5:  ($spacer * 1.25), 	// 20px
+	6:  ($spacer * 1.5),  	// 24px
+	7:  ($spacer * 1.75), 	// 28px
+	8:  ($spacer * 2),    	// 32px
+	9:  ($spacer * 2.25), 	// 36px
+	10: ($spacer * 2.5), 	// 40px
+) !default;
+
+// Components
+//
+// Define common padding and border radius sizes and more.
+
+// Border variables
+$border-width:                                      2px !default;
+$border-color:                                      shade-color($gray-800, 25%) !default;
+
+// Border radius variables
+$border-radius:                                     .5rem !default; // 8px
+$border-radius-sm:                                  .375rem !default; // 6px
+$border-radius-lg:                                  .75rem !default; // 12px
+$border-radius-xl:                                  .875rem !default; // 14px Custom variable
+
+// Box-shadow variables
+$box-shadow-sm:               						0 .375rem .5rem 0 rgb($gray-900, .02) !default;
+$box-shadow:                  						0 .625rem .75rem 0 rgb($gray-900, .04) !default;
+$box-shadow-lg:               						0 .75rem 1rem 0 rgb($gray-900, .06) !default;
+$box-shadow-inset:                                  inset 0 1px 2px rgba($black, .075) !default;
+
+// Transitions
+$transition-base:                                   all .3s ease !default;
+$transition-input:                                  color .3s ease, background-color .3s ease !default;  // Custom variable
+
+// Typography
+//
+// Font, line-height, and color for body text, headings, and more.
+
+$font-family-sans-serif:    Roboto,
+                            -apple-system,
+                            BlinkMacSystemFont,
+                            "Segoe UI",
+                            "Helvetica Neue",
+                            Arial,
+                            "Noto Sans",
+                            sans-serif,
+                            "Apple Color Emoji",
+                            "Segoe UI Emoji",
+                            "Segoe UI Symbol",
+                            "Noto Color Emoji";
+
+$font-size-root:                                    null !default;
+$font-size-base:                                    1rem !default; // Assumes the browser default, typically `16px`
+$font-size-sm:                                      $font-size-base * .875 !default;
+$font-size-lg:                                      $font-size-base * 1.125 !default;
+
+$font-weight-lighter:                               100 !default;
+$font-weight-light:                                 300 !default;
+$font-weight-normal:                                400 !default;
+$font-weight-bold:                                  500 !default;
+$font-weight-bolder:                                700 !default;
+$font-weight-boldest:                               900 !default; // Custom variable
+
+$font-weight-base:                                  $font-weight-normal !default;
+
+$line-height-base:                                  1.5 !default;
+$line-height-sm:                                    1.25 !default;
+$line-height-lg:                                    1.75 !default;
+$line-height-xl:                                    2 !default; // Custom variable
+$line-height-xxl:                                   2.25 !default; // Custom variable
+
+
+$h1-font-size:                                      $font-size-base * 1.5 !default;     // 24px
+$h2-font-size:                                      $font-size-base * 1.375 !default;   // 22px
+$h3-font-size:                                      $font-size-base * 1.25 !default;    // 20px
+$h4-font-size:                                      $font-size-base * 1.125 !default;   // 18px
+$h5-font-size:                                      $font-size-base !default;           // 16px
+$h6-font-size:                                      $font-size-base * .875 !default;    // 14px
+
+// Font sizes
+$font-sizes: (
+    1: $h1-font-size,               // 24px
+    2: $h2-font-size,               // 22px
+    3: $h3-font-size,               // 20px
+    4: $h4-font-size,               // 18px
+    5: $h5-font-size,               // 16px
+    6: $h6-font-size,               // 14px
+
+    7:  $font-size-base * 0.8125,   // 13px
+    8:  $font-size-base * 0.75,     // 12px
+    9:  $font-size-base * 0.6875,   // 11px
+    10: $font-size-base * 0.625,    // 10px
+    11: $font-size-base * 0.5,      // 8px
+    12: $font-size-base * 0.4375,   // 7px
+
+    base:  $font-size-base,         // 16px
+    fluid: 100%,                    // 100%
+
+    2x:  $font-size-base * 2,       // 32px
+    3x:  $font-size-base * 3,       // 48px
+) !default;
+
+// Headings variables
+$headings-color:                                    $gray-200 !default;
+
+// Type variables
+$small-font-size:                                   .75em !default;
+
+$blockquote-font-size:                              $h6-font-size !default;
+$blockquote-footer-color:                           $gray-400 !default;
+
+// Tables
+//
+// Customizes the `.table` component with basic values, each used across all table variations.
+
+$table-color:                                       $body-color !default;
+$table-bg:                                          transparent !default;
+
+$table-th-font-weight:                              500 !default;
+
+$table-striped-color:                               $table-color !default;
+$table-striped-bg:                                  rgba($secondary, 0.75) !default;
+
+$table-active-color:                                $table-color !default;
+$table-active-bg:                                   $gray-700 !default;
+
+$table-hover-color:                                 $table-color !default;
+$table-hover-bg:                                    $secondary !default;
+
+$table-group-separator-color:                       inherit !default;
+
+// Buttons + Forms
+//
+// Shared variables that are reassigned to `$input-` and `$btn-` specific variables.
+
+$input-btn-padding-y:                               .5rem !default; // 8px
+$input-btn-padding-x:                               1.125rem !default; // 18px
+
+$input-btn-focus-box-shadow:                        null !default;
+
+$input-btn-padding-y-sm:                            .375rem !default; // 6px
+$input-btn-padding-x-sm:                            .75rem !default; // 12px
+$input-btn-font-size-sm:                            $font-size-sm !default;
+
+$input-btn-padding-y-lg:                            .625rem !default; // 10px
+$input-btn-padding-x-lg:                            1.25rem !default; // 20px 
+$input-btn-font-size-lg:                            $font-size-base !default;
+
+// Buttons
+//
+// For each of Bootstrap's buttons, define text, background, and border color.
+$btn-box-shadow:                                    null !default;
+$btn-focus-box-shadow:                              null !default;
+$btn-active-box-shadow:                             null !default;
+
+$btn-link-disabled-color:                           $gray-600 !default;
+
+// Forms
+
+// Form input variables
+$input-bg:                                          $body-bg !default;
+$input-disabled-bg:                                 $secondary !default;
+$input-disabled-border-color:                       null !default;
+
+$input-color:                                       $body-color !default;
+$input-border-color:                                $border-color !default;
+
+$input-focus-bg:                                    $input-bg !default;
+$input-focus-border-color:                          $gray-800 !default;
+$input-focus-color:                                 $input-color !default;
+$input-focus-box-shadow:                            $input-btn-focus-box-shadow !default;
+
+$input-placeholder-color:                           $gray-500 !default;
+$input-plaintext-color:                             $body-color !default;
+
+$input-solid-bg:                                    $secondary !default; // Custom variable
+$input-solid-bg-focus:                              shade-color($secondary, 6%) !default; // Custom variable
+$input-solid-placeholder-color:                     $input-placeholder-color !default;  // Custom variable
+$input-solid-color:                              	$gray-300 !default; // Custom variable
+
+// Form- check variables
+$form-check-input-width:                            1.1em !default;
+
+$form-check-input-bg:                               $input-bg !default;
+$form-check-input-border:                           2px solid $border-color !default;
+$form-check-input-focus-box-shadow:                 none !default;
+
+// Form switch variables
+$form-switch-color:                                 $gray-700 !default;
+
+// Input group variables
+$input-group-addon-color:                           $gray-500 !default;
+$input-group-addon-bg:                              $secondary !default;
+$input-group-addon-border-color:                    $input-border-color !default;
+
+// Form select variables
+$form-select-color:                                 $input-solid-color !default;
+$form-select-bg:                                    $input-bg !default;
+$form-select-disabled-color:                        null !default;
+$form-select-disabled-bg:                           $secondary !default;
+$form-select-disabled-border-color:                 $input-disabled-border-color !default;
+$form-select-indicator-color:                       $gray-600 !default;
+
+// Form range variables
+$form-range-track-bg:                               $secondary !default;
+$form-range-thumb-disabled-bg:                      $gray-500 !default;
+
+// Navs
+
+// Nav variables
+$nav-link-disabled-color:                           $gray-600 !default;
+
+$nav-tabs-link-active-color:                        $gray-300 !default;
+$nav-tabs-link-active-bg:                           $body-bg !default;
+
+// Nav segmented (segmented control)
+$nav-segmented-bg:                                  $body-bg !default; // Custom variable
+$nav-segmented-link-color:                          $gray-500 !default; // Custom variable
+
+$nav-segmented-link-margin:                         .25rem !default; // Custom variable
+$nav-segmented-link-padding-x:                      1.875rem !default; // Custom variable
+$nav-segmented-link-padding-y:                      .5rem !default; // Custom variable
+
+$nav-segmented-link-active-color:                   $body-color !default; // Custom variable
+$nav-segmented-link-active-bg:                      linear-gradient(180deg, #404252, darken(#404252, 6%)) !default; // Custom variable
+$nav-segmented-link-active-box-shadow:              inset 0 .125rem 0 0 lighten(#404252, 6%) !default; // Custom variable
+
+// Navigation
+$navigation-width:                                  5.625rem; // 90px Custom variable
+$navigation-bg:                                     $body-bg; // Custom variable
+$navigation-backdrop-shadow:                        0 0 0 75rem rgba(22, 22, 82, 0.1); // Custom variable
+
+$navigation-link-color:                             $gray-400; // Custom variable
+$navigation-link-active-color:                      $primary; // Custom variable
+$navigation-link-active-bg:                         shade-color($primary, 70%); // Custom variable
+
+$navigation-link-width:                             3.5rem; // Custom variable
+$navigation-link-height:                            $navigation-link-width; // Custom variable
+$navigation-link-font-size:                         1.5rem; // Custom variable
+
+$account-tab-active-box-shadow:                     0 0 0 0.1875rem tint-color($primary, 80%); // Custom variable
+
+// Navbar
+$navbar-light-toggler-border-color:                 $border-color !default;
+
+// Dropdowns
+//
+// Dropdown menu container and contents.
+
+// Dropdown variables
+$dropdown-padding-x:                                .375rem !default;
+$dropdown-padding-y:                                .5rem !default;
+$dropdown-color:                                    $body-color !default;
+$dropdown-bg:                                       $body-bg !default;
+$dropdown-border-color:                             $border-color !default;
+$dropdown-border-radius:                            $border-radius-lg !default;
+
+$dropdown-link-color:                               $body-color !default;
+$dropdown-link-hover-color:                         $body-color !default;
+$dropdown-link-hover-bg:                            $light !default;
+
+// Dropdown dark variables
+$dropdown-dark-border-color:                        rgba($black, .15) !default;
+
+// Pagination variables
+$pagination-bg:                                     $body-bg !default;
+$pagination-border-color:                           $border-color !default;
+
+$pagination-focus-bg:                               $gray-700 !default;
+$pagination-focus-box-shadow:                       none !default;
+
+$pagination-hover-bg:                               $secondary !default;
+$pagination-hover-border-color:                     $border-color !default;
+
+$pagination-disabled-color:                         $gray-600 !default;
+$pagination-disabled-bg:                            $body-bg !default;
+$pagination-disabled-border-color:                  $border-color !default;
+
+// Cards
+$card-spacer-y:                                     $spacer * 1.25 !default;
+$card-spacer-x:                                     $spacer * 1.25 !default;
+$card-title-spacer-y:                               $spacer * 1.25 * .5 !default;
+$card-border-radius:                                $border-radius-xl !default;
+$card-border-color:                                 $border-color !default;
+$card-box-shadow:                                   0 .125rem .1875rem 0 rgb($gray-900, .03) !default; // Custom variable
+$card-cap-bg:                                       inherit !default;
+$card-cap-color:                                    null !default;
+$card-height:                                       null !default;
+$card-color:                                        null !default;
+$card-bg:                                           $body-bg !default;
+
+// Accordion
+$accordion-color:                                   $body-color !default;
+$accordion-bg:                                      transparent !default;
+$accordion-border-color:                            $border-color !default;
+
+$accordion-button-color:                            $accordion-color !default;
+$accordion-button-bg:                               $accordion-bg !default;
+$accordion-button-active-bg:                        transparent !default;
+$accordion-button-active-color:                     $accordion-color !default;
+
+$accordion-button-focus-border-color:               $input-focus-border-color !default;
+$accordion-button-focus-box-shadow:                 none !default;
+
+$accordion-icon-width:                              .875rem !default;
+$accordion-icon-color:                              $accordion-color !default;
+$accordion-icon-active-color:                       $accordion-button-active-color !default;
+
+// Tooltips
+$tooltip-color:                                     $body-color !default;
+$tooltip-bg:                                        $body-bg !default;
+$tooltip-box-shadow:                                0 0 1.25rem 0 rgba($black, .1) !default; // Custom variable
+$tooltip-opacity:                                   1 !default;
+
+// Popovers
+$popover-bg:                                        $body-bg !default;
+$popover-border-color:                              $border-color !default;
+$popover-box-shadow:                                0 0 1.25rem 0 rgba($black, .1) !default;
+
+$popover-header-bg:                                 $body-bg !default;
+$popover-header-color:                              $headings-color !default;
+
+$popover-body-color:                                $body-color !default;
+
+// Badges
+$badge-color:                                       $white !default;
+$badge-border-radius:                               $border-radius-sm !default;
+$badge-width:                                       1.25rem !default; // Custom variable
+
+// Modals               
+$modal-content-color:                               null !default;
+$modal-content-bg:                                  $body-bg !default;
+$modal-content-border-color:                        $border-color !default;
+$modal-content-box-shadow-xs:                       $box-shadow-sm !default;
+$modal-content-box-shadow-sm-up:                    $box-shadow !default;
+                
+$modal-backdrop-bg:                                 #161652 !default;
+$modal-backdrop-opacity:                            .1 !default;
+$modal-header-border-color:                         $border-color !default;
+$modal-footer-border-color:                         $modal-header-border-color !default;
+
+// Alerts
+//
+// Define alert colors, border radius, and padding.
+
+$alert-bg-scale:                                    -40% !default;
+$alert-border-scale:                                -40% !default;
+$alert-color-scale:                                 40% !default;
+
+// Progress bars
+$progress-bg:                                       $secondary !default;
+$progress-border-radius:                            $border-radius-sm !default;
+$progress-box-shadow:                               none !default;
+$progress-bar-color:                                $white !default;
+$progress-bar-bg:                                   $primary !default;
+
+// List group
+$list-group-color:                                  $body-color !default;
+$list-group-bg:                                     transparent !default;
+$list-group-border-color:                           $border-color !default;
+
+$list-group-hover-bg:                               $secondary !default;
+
+$list-group-disabled-color:                         $gray-500 !default;
+$list-group-disabled-bg:                            $list-group-bg !default;
+
+$list-group-action-color:                           $gray-300 !default;
+
+$list-group-action-active-color:                    $body-color !default;
+$list-group-action-active-bg:                       $gray-700 !default;
+
+// Image thumbnails
+$thumbnail-bg:                                      $body-bg !default;
+$thumbnail-border-color:                            $border-color !default;
+
+// Breadcrumbs              
+$breadcrumb-divider-color:                          $gray-600 !default;
+$breadcrumb-active-color:                           $gray-600 !default;
+
+// Code
+$code-font-size:                                    $font-size-base !default;
+$code-color:                                        $pink !default;
+                
+$kbd-color:                                         $white !default;
+$kbd-bg:                                            $gray-800 !default;
+                
+$pre-color:                                         null !default;
+
+// Sidebar
+$sidebar-width:                                     25rem; // 400px
+$sidebar-header-height:                             5rem; // 80px
+$sidebar-bg:                                        $light;
+
+$footer-panel-height:                               5rem;
+
+// Chat
+$main-bg:                                           $body-bg;
+$chat-info-bg:                                      $light;
+
+$chat-panel-height:                                 5rem;
+$chat-info-header-height:                           5rem;
+$chat-info-width:                                   25rem;
+
+// Messages
+$message-content-padding-y:                         1rem !default; // Custom variable
+$message-content-padding-x:                         1rem !default; // Custom variable
+$message-content-width:                             30rem !default; // Custom variable
+
+$message-color:                                     $body-color !default; // Custom variable
+$message-bg:                                        $light !default; // Custom variable
+$message-box-shadow:                                inset 0 -.125rem 0 0 shade-color($message-bg, 4%) !default; // Custom variable
+
+$message-self-color:                                $white !default; // Custom variable
+$message-self-bg:                                   $primary !default; // Custom variable
+$message-self-box-shadow:                           inset 0 .125rem 0 0 tint-color($message-self-bg, 6%) !default; // Custom variable
+
+// Contact list
+$contact-item-border-color:                         $border-color; // Custom variable
+$contact-item-box-shadow:                           0 .125rem .1875rem 0 rgb($gray-900, .03); // Custom variable
+
+$contact-item-padding:                              1.25rem; // Custom variable
+
+$contact-item-hover-bg:                             $body-bg; // Custom variable
+
+$contact-item-active-bg:                            $body-bg; // Custom variable
+$contact-item-active-border-color:                  $primary; // Custom variable
+$contact-item-active-box-shadow:                    0 0 0 .1875rem shade-color($primary, 60%); // Custom variable
+
+// Avatar
+$avatar-label-color:                                $gray-200 !default; // Custom variable
+$avatar-label-bg:                                   $secondary !default; // Custom variable
+
+$avatar-state-border-color:                         $body-bg !default; // Custom variable
+
+// Chat separator
+$chat-separator-bg:                                 $light !default; // Custom variable
+
+// Utilities
+
+// Letter spacing values
+$letter-spacing-values: (
+    0: 0,           // 0px
+    1: 0.0625rem,   // 1px
+    2: 0.125rem,    // 2px
+    3: 0.1875rem,   // 3px
+    4: 0.25rem,     // 4px
+    5: 0.5rem,      // 8px
+) !default;
+
+// Avatar sizes
+$avatar-sizes: (
+    default: 3rem,  // 48px
+    sm: 2.375rem,   // 38px
+    lg: 4rem,       // 64px
+    xl: 6rem,       // 96px
+) !default;
+
+// Bootstrap required
+@import "../../../node_modules/bootstrap/scss/variables";
+@import "../../../node_modules/bootstrap/scss/mixins";
+@import "../../../node_modules/bootstrap/scss/utilities";
+
+// Custom utilities and mixins required
+@import "utilities";

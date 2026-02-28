@@ -1,0 +1,21 @@
+//
+// Accordion
+//
+
+// Accordion borderless
+.accordion {
+	&.accordion-borderless {
+
+		// Reset borders
+		.accordion-item {
+			border: 0;
+		}
+	}
+}
+
+// Accordion button style
+.accordion-button {
+	&:not(.collapsed) {
+		box-shadow: none;
+	}
+}

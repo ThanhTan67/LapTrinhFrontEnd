@@ -1,0 +1,37 @@
+/* Add this CSS to your project's main CSS file or within a <style> tag in your component */
+
+.input-group-custom {
+    position: relative;
+    margin-top: 1rem;
+}
+
+.input-group-custom input {
+    padding: 1.5rem 0.75rem 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input-group-custom label {
+    position: absolute;
+    top: 0;
+    left: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    pointer-events: none;
+    color: #6c757d;
+    transition: all 0.2s ease-in-out;
+    background: white;
+    border-radius: 0.25rem;
+}
+
+.input-group-custom input:focus + label,
+.input-group-custom input:not(:placeholder-shown) + label {
+    top: -1.25rem;
+    left: 0.75rem;
+    font-size: 0.85rem;
+    color: #495057;
+    background: white;
+    border-radius: 0.25rem;
+    padding: 0 0.25rem;
+}

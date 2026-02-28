@@ -1,0 +1,29 @@
+// 
+// Chat separator
+// 
+
+.separator {
+    position: relative;
+    text-align: center;
+    margin: rfs-value(24px) 0;
+
+    &::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: rfs-value(1px);
+        left: 0;
+        right: 0;
+        top: 50%;
+        background-color: $border-color;
+    }
+
+    .separator-title {
+        position: relative;
+        z-index: 1;
+        padding: rfs-value(6px) rfs-value(12px);
+        font-size: rfs-value(14px);
+        border-radius: $border-radius-sm;
+        background-color: $chat-separator-bg;
+    }
+}

@@ -1,0 +1,46 @@
+// 
+// Form check
+// 
+
+// Form check color variants
+.form-check {
+    // Success state
+    &.form-check-success {
+        .form-check-input {
+            &:checked {
+                background-color: $success;
+                border-color: $success;
+            }
+        }
+    }
+
+    // Danger state
+    &.form-check-danger {
+        .form-check-input {
+            &:checked {
+                background-color: $danger;
+                border-color: $danger;
+            }
+        }
+    }
+
+    // Warning state
+    &.form-check-warning {
+        .form-check-input {
+            &:checked {
+                background-color: $warning;
+                border-color: $warning;
+            }
+        }
+    }
+
+    // Info state
+    &.form-check-info {
+        .form-check-input {
+            &:checked {
+                background-color: $info;
+                border-color: $info;
+            }
+        }
+    }
+}

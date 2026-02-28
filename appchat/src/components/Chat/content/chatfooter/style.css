@@ -1,0 +1,126 @@
+.App {
+    font-family: sans-serif;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    color: #fff;
+}
+
+.EmojiPickerReact {
+    position: absolute !important;
+    bottom: 100% !important;
+    display: none !important;
+}
+
+.App .EmojiPickerReact {
+    --epr-picker-height: 500px;
+}
+
+.show-emoji {
+    padding-bottom: 15px;
+}
+.chat-content {
+    overflow-x: hidden;
+    overflow-y: auto; /* Thiết lập thanh cuộn dọc khi nội dung vượt quá kích thước */
+    /*max-height: calc(100vh - 200px); !* Giới hạn chiều cao của chat content, để lại không gian cho footer và header *!*/
+}
+.btn-link.btn-download-self {
+    background-color: #f1f1f1;
+    color: black;
+}
+.btn-link.btn-download-self:hover {
+    color: #058FFF;
+}
+.btn-link {
+    background-color: #058FFF;
+    color: white;
+}
+.btn-link:hover{
+    color: #000000;
+}
+.chat-footer{
+    position: relative;
+    height: auto;
+    width: 100%;
+    box-sizing: border-box;
+    /*padding-top: 20px;*/
+}
+.itemchat{
+    background-color: white;
+    box-sizing: border-box;
+    width: 100%;
+    flex-grow: 1;
+}
+.container-fluid{
+
+
+    .btn-link.btn-download-self:hover {
+        color: #058FFF;
+    }
+
+    .btn-link {
+        background-color: #058FFF;
+        color: white;
+    }
+
+    .btn-link:hover {
+        color: #000000;
+    }
+
+    .chat-footer {
+        position: relative;
+        height: auto;
+        width: 100%;
+        box-sizing: border-box;
+        /*padding-top: 20px;*/
+    }
+
+    .itemchat {
+        background-color: white;
+        box-sizing: border-box;
+        width: 100%;
+        flex-grow: 1;
+    }
+
+    .container-fluid {
+
+    }
+
+    .containerfile {
+        display: flex;
+        flex-wrap: wrap;
+        height: auto;
+        padding-bottom: 20px;
+        gap: 10px;
+
+    }
+
+    .fileshow {
+        padding-left: 10px;
+        position: relative;
+    }
+
+    .filename {
+        white-space: nowrap; /* Prevent text from wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+
+    .xoaFile {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 20px;
+        height: 20px;
+        position: absolute;
+        right: -5px;
+        top: -10px;
+        border-radius: 50%;
+        background-color: red;
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+    }
+}

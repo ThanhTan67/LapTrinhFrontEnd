@@ -1,0 +1,87 @@
+// 
+// Message
+// 
+
+.message {
+    display: flex;
+    flex-direction: column;
+
+    &+& {
+        margin-top: rfs-value(32px);
+    }
+
+    .message-item+.message-item {
+        margin-top: rfs-value(16px);
+    }
+
+    .message-item {
+        display: flex;
+    }
+
+    .message-content {
+        display: inline-block;
+        padding: $message-content-padding-y $message-content-padding-x;
+        max-width: $message-content-width;
+        border-radius: $border-radius-sm $border-radius-xl $border-radius-xl $border-radius-sm;
+        color: $message-color;
+        background-color: $message-bg;
+        box-shadow: $message-box-shadow;
+    }
+
+    .message-item:first-child .message-content {
+        border-radius: $border-radius-xl $border-radius-xl $border-radius-xl $border-radius-sm;
+    }
+
+    .message-info {
+        display: flex;
+        align-items: center;
+        margin-top: rfs-value(12px);
+
+        &>*:not(:last-child) {
+            margin-right: rfs-value(16px);
+        }
+    }
+
+    // Self message
+    &.self {
+        align-items: flex-end;
+
+        .message-item {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            border-radius: $border-radius-xl $border-radius-sm $border-radius-sm $border-radius-xl;
+            color: $message-self-color;
+            background-color: $message-self-bg;
+            box-shadow: $message-self-box-shadow;
+
+            .h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+                color: inherit;
+            }
+            
+            a {
+                color: $white;
+            }
+
+        }
+
+        .message-item:first-child .message-content {
+            border-radius: $border-radius-xl $border-radius-xl $border-radius-sm $border-radius-xl;
+        }
+
+        // Light button in self message
+        .btn.btn-secondary {
+            background-color: shade-color($primary, 6%);
+            border-color: shade-color($primary, 6%);
+
+            i {
+                color: $white !important;
+            }
+        }
+    }
+
+    .shared-image-list img {
+        max-height: rfs-value(100px);
+    }
+}

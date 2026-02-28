@@ -1,0 +1,16 @@
+// 
+// Dropdown menu
+// 
+
+.dropdown-menu {
+    box-shadow: $dropdown-box-shadow;
+}
+
+.dropdown-item {
+    border-radius: $border-radius-sm;
+
+    i {
+        color: inherit;
+        font-size: $dropdown-font-size;
+    }
+}

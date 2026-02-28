@@ -1,0 +1,61 @@
+//
+// Form Select
+//
+
+.form-select {
+    box-shadow: none !important;
+
+    // Solid style
+	&.form-select-solid {
+		background-color: $input-solid-bg;
+		border-color: $input-solid-bg;
+		color: $input-solid-color;
+		transition: $transition-input;
+
+        &::placeholder { 
+			color: $input-solid-placeholder-color;
+		}
+		
+		&::-moz-placeholder {
+			color: $input-solid-placeholder-color;
+			opacity: 1;
+		}
+		
+		.dropdown.show > &,
+		&:active,
+		&.active,
+		&:focus,
+		&.focus {
+			background-color: $input-solid-bg-focus;
+			border-color: $input-solid-bg-focus !important;
+			color: $input-solid-color;
+			transition: $transition-input;
+		}
+	}
+
+	// White style
+	&.form-select-transparent {
+		background-color: transparent;
+		border-color: transparent;
+		color: $input-solid-color;
+
+        &::placeholder { 
+			color: $input-placeholder-color;
+		}
+		
+		&::-moz-placeholder {
+			color: $input-placeholder-color;
+			opacity: 1;
+		}
+
+		.dropdown.show > &,
+		&:active,
+		&.active,
+		&:focus,
+		&.focus {
+			background-color: transparent;
+			border-color: transparent;
+			color: $input-solid-color;
+		}
+	}
+}

@@ -1,0 +1,76 @@
+// 
+// Custom button variant
+// 
+
+@mixin button-custom-variant(
+    $btn-color,
+    $btn-icon-color,
+    $btn-border-color,
+    $btn-bg-color,
+    $btn-color-active,
+    $btn-icon-color-active,
+    $btn-border-color-active,
+    $btn-bg-color-active
+) {
+    @if ( $btn-color != null ) {
+        color: $btn-color;
+    }
+
+    @if ( $btn-icon-color != null ) {
+        i {
+    		color: $btn-icon-color;
+    	}
+
+        .svg-icon {
+    		@include svg-icon-color($btn-icon-color);
+    	}
+
+        &.dropdown-toggle:after {
+            color: $btn-icon-color;
+        }
+    }
+
+    @if ( $btn-border-color != null ) {
+        border-color: $btn-border-color;
+    }
+
+    @if ( $btn-bg-color != null ) {
+        background-color: $btn-bg-color;
+    }
+    
+    &:hover,
+    &:focus,
+    .btn-check:focus + &,
+    .btn-check:checked + &,
+    .btn-check:active + &,
+    &:active,
+    &.active,
+    .show > &.dropdown-toggle {
+                
+        @if ( $btn-color-active != null ) {
+            color: $btn-color-active;
+        }
+
+        @if ( $btn-icon-color-active != null ) {
+            i {
+        		color: $btn-icon-color-active;
+        	}
+
+            .svg-icon {
+                @include svg-icon-color($btn-icon-color-active);
+            }
+
+            &.dropdown-toggle:after {
+                color: $btn-icon-color-active;
+            }
+        }
+
+        @if ( $btn-border-color-active != null ) {
+            border-color: $btn-border-color-active;
+        }
+
+        @if ( $btn-bg-color-active != null ) {
+            background-color: $btn-bg-color-active;
+        }
+    }
+}

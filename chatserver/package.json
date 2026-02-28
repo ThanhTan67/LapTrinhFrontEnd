@@ -1,0 +1,20 @@
+{
+  "name": "chat-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "db.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "mysql2": "^3.18.2",
+    "sequelize": "^6.37.7",
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  }
+}

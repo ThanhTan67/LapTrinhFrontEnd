@@ -1,0 +1,25 @@
+// 
+// SVG icon mixins
+// 
+
+@mixin svg-icon-color($color, $important: false) {
+    svg {
+        [fill]:not(g):not(.permanent) {
+            fill: $color if-important($important);
+            transition: fill 0.3s ease;
+        }
+
+        &:hover {
+            [fill]:not(g):not(.permanent) {
+                transition: fill 0.3s ease;
+            }
+        }
+    }
+}
+
+@mixin svg-icon-size($size, $important: false) {
+    svg {
+        height: $size if-important($important);
+        width: $size if-important($important);
+    }
+}

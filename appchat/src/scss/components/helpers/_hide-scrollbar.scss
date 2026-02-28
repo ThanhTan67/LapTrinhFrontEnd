@@ -1,0 +1,7 @@
+// 
+// Hide scrollbar helper
+// 
+
+.hide-scrollbar {
+    @include hide-scrollbar();
+}

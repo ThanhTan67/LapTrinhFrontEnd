@@ -1,0 +1,147 @@
+/* CSS bổ sung - Chỉ thêm border cho input soạn tin nhắn */
+.message-input {
+    border: 1px solid #ddd !important; /* Border nhẹ cho input */
+    border-radius: 30px !important; /* Bo góc đẹp */
+    padding-left: 15px !important; /* Padding bên trái để đẹp */
+    padding-right: 15px !important; /* Padding bên phải */
+    background-color: #f8f9fa !important; /* Nền nhẹ để nổi bật */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Bóng nhẹ */
+    transition: border-color 0.3s ease; /* Hiệu ứng mượt */
+
+}
+
+.message-input:focus {
+    border-color: #64a6ff !important; /* Màu border khi focus */
+    /*box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25) !important; !* Focus shadow *!*/
+}
+
+/* Giữ nguyên các style khác cho dropdown và preview */
+.dropdown-menu {
+    min-width: 150px;
+}
+
+.dropdown-item {
+    cursor: pointer;
+    padding: 8px 16px;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-attachment {
+    border: none;
+    background: transparent;
+}
+
+/*.itemchat .input-group {*/
+/*    flex-wrap: nowrap;*/
+/*}*/
+
+/*.containerfile {*/
+/*    display: flex;*/
+/*    flex-wrap: wrap;*/
+/*    gap: 10px;*/
+/*    margin-bottom: 10px;*/
+/*}*/
+
+/*.fileshow {*/
+/*    position: relative;*/
+/*}*/
+
+.xoaFile {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.gif-picker {
+    border: 1px solid #ddd;
+    overflow-y: auto;
+    max-height: 450px;
+}
+
+.input-group {
+    border: none;
+}
+
+/* Style cho nút gửi */
+.btn-send {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3) !important;
+    transition: all 0.3s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.btn-send:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 6px 15px rgba(74, 144, 226, 0.4) !important;
+    background: linear-gradient(135deg, #357abd 0%, #2a5f8a 100%) !important;
+}
+
+.btn-send:active {
+    transform: scale(0.95) !important;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3) !important;
+}
+
+.btn-send i {
+    color: white !important;
+    font-size: 20px !important;
+    transition: transform 0.3s ease !important;
+}
+
+.btn-send:hover i {
+    transform: translateX(3px) translateY(-3px) !important;
+}
+
+.btn-send::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-send:hover::before {
+    width: 150px;
+    height: 150px;
+}
+
+/* Responsive cho mobile */
+@media (max-width: 768px) {
+    .btn-send {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .btn-send i {
+        font-size: 18px !important;
+    }
+
+    .message-input {
+        padding: 10px 15px !important;
+        font-size: 14px !important;
+    }
+}

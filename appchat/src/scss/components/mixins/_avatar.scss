@@ -1,0 +1,15 @@
+//
+// Avatar mixin
+//
+
+@mixin avatar-size($size) {
+    > img {
+        width: $size;
+        height: $size;
+    }
+
+    .avatar-label {
+        width: $size;
+        height: $size;
+    }
+}

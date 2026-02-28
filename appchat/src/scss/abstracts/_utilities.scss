@@ -1,0 +1,39 @@
+$utilities: map-merge(
+    $utilities,
+    (  
+        "text-align": map-merge(
+            map-get($utilities, "text-align"),
+            (
+            values: map-merge(
+                map-get(map-get($utilities, "text-align"), "values"),
+                   (justify: justify)
+                ),
+            ),
+        ),
+
+        "font-weight": map-merge(
+            map-get($utilities, "font-weight"),
+            (
+            values: map-merge(
+                map-get(map-get($utilities, "font-weight"), "values"),
+                    (bolder: $font-weight-bolder,
+                    boldest: $font-weight-boldest)
+                ),
+            ),
+        ),
+
+        "font-size": (
+            rfs: true,
+            responsive: true,
+            property: font-size,
+            class: fs,
+            values: $font-sizes
+        ),
+
+        "letter-spacing": (
+            property: letter-spacing,
+            class: ls,
+            values: $letter-spacing-values
+        )        
+    )
+);
