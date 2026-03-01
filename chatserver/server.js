@@ -3,18 +3,16 @@ require('dotenv').config();
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
-const { User, ActiveUserSession, Room, RoomMember, Message, sequelize } = require('./db');
-
-// Kiểm tra kết nối database trước khi start server
-async function checkDatabaseConnection() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Database connection established successfully.');
-    } catch (error) {
-        console.error('❌ Unable to connect to the database:', error);
-        process.exit(1);
-    }
-}
+const {
+    User,
+    ActiveUserSession,
+    Room,
+    RoomMember,
+    Message,
+    sequelize,
+    createDatabaseIfNotExists,
+    syncDatabase
+} = require('./db');
 
 // Lấy giá trị từ biến môi trường
 const PORT = process.env.PORT || 8080;
@@ -29,55 +27,200 @@ const LOGOUT_DELAY = parseInt(process.env.LOGOUT_DELAY) || 5000;
 
 const online = new Map(); // username → Set<ws>
 
-// Khởi tạo WebSocket server sau khi database đã kết nối
-async function startServer() {
-    await checkDatabaseConnection();
+// Khởi tạo database
+async function initializeDatabase() {
+    try {
+        // Tạo database nếu chưa tồn tại
+        await createDatabaseIfNotExists();
 
-    const wss = new WebSocket.Server({ port: PORT, path: WS_PATH });
+        // Kiểm tra kết nối
+        await sequelize.authenticate();
+        console.log('✅ Database connection established successfully.');
 
-    console.log(`🚀 WebSocket server running at ws://${process.env.SERVER_HOST || 'localhost'}:${PORT}${WS_PATH}`);
+        // Tạo các tables
+        await syncDatabase();
 
-    /**
-     * Force logout user từ tất cả các socket khác
-     */
-    async function forceLogoutUser(username, excludeWs = null, reason = 'Đăng nhập từ nơi khác') {
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error);
+        process.exit(1);
+    }
+}
+
+/**
+ * Force logout user từ tất cả các socket khác
+ */
+async function forceLogoutUser(username, excludeWs = null, reason = 'Đăng nhập từ nơi khác') {
+    const sockets = online.get(username);
+    if (!sockets) return;
+
+    try {
+        for (const sock of Array.from(sockets)) {
+            if (sock === excludeWs) continue;
+            if (sock.readyState === WebSocket.OPEN) {
+                send(sock, { status: 'success', event: 'FORCE_LOGOUT', mes: reason });
+            }
+            try {
+                sock.terminate();
+            } catch (e) { /* ignore */ }
+        }
+    } finally {
+        if (online.has(username) && online.get(username).size === 0) {
+            online.delete(username);
+        }
+    }
+}
+
+/**
+ * Gửi message đến client
+ */
+function send(ws, payload) {
+    try {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(payload));
+        }
+    } catch (err) {
+        console.error('Send error:', err);
+    }
+}
+
+/**
+ * Format thời gian theo giờ Việt Nam
+ */
+function formatVietnamTime(timestamp) {
+    const date = new Date(timestamp);
+    const vietnamTime = new Date(date.getTime() + (TIMEZONE_OFFSET * 60 * 60 * 1000));
+
+    const year = vietnamTime.getUTCFullYear();
+    const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
+    const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(vietnamTime.getUTCSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Cập nhật danh sách user cho client
+ */
+async function broadcastUserListUpdate(username, excludeWs = null) {
+    try {
+        const peopleMessages = await Message.findAll({
+            attributes: ['fromUser', 'toTarget'],
+            where: {
+                type: 'people',
+                [Op.or]: [{ fromUser: username }, { toTarget: username }]
+            },
+            raw: true
+        });
+
+        const rooms = await RoomMember.findAll({
+            attributes: ['roomName'],
+            where: { username },
+            raw: true
+        });
+
+        const userSet = new Set();
+        const roomSet = new Set();
+
+        peopleMessages.forEach(msg => {
+            if (msg.fromUser && msg.fromUser !== username) userSet.add(msg.fromUser);
+            if (msg.toTarget && msg.toTarget !== username) userSet.add(msg.toTarget);
+        });
+
+        rooms.forEach(room => {
+            if (room.roomName) roomSet.add(room.roomName);
+        });
+
+        const userList = [
+            ...Array.from(userSet).map(name => ({ name, type: 0 })),
+            ...Array.from(roomSet).map(name => ({ name, type: 1 }))
+        ];
+
         const sockets = online.get(username);
-        if (!sockets) return;
-
-        try {
-            for (const sock of Array.from(sockets)) {
-                if (sock === excludeWs) continue;
-                if (sock.readyState === WebSocket.OPEN) {
-                    send(sock, { status: 'success', event: 'FORCE_LOGOUT', mes: reason });
+        if (sockets) {
+            for (const sock of sockets) {
+                if (sock.readyState === WebSocket.OPEN && sock !== excludeWs) {
+                    send(sock, {
+                        status: 'success',
+                        event: 'GET_USER_LIST',
+                        data: userList
+                    });
                 }
-                try {
-                    sock.terminate();
-                } catch (e) { /* ignore */ }
-            }
-        } finally {
-            // Clean up online map if needed
-            if (online.has(username) && online.get(username).size === 0) {
-                online.delete(username);
             }
         }
+    } catch (err) {
+        console.error('broadcastUserListUpdate error:', err);
+    }
+}
+
+/**
+ * Kiểm tra authentication
+ */
+async function requireAuth(ws, event) {
+    if (!ws.username || !ws.session_id) {
+        send(ws, { status: 'fail', event, mes: 'NOT_AUTHENTICATED' });
+        return false;
     }
 
-    /**
-     * Gửi message đến client
-     */
-    function send(ws, payload) {
-        try {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify(payload));
-            }
-        } catch (err) {
-            console.error('Send error:', err);
+    try {
+        const session = await ActiveUserSession.findOne({
+            where: { username: ws.username, session_id: ws.session_id }
+        });
+
+        if (!session) {
+            send(ws, { status: 'fail', event, mes: 'SESSION_INVALID_OR_EXPIRED' });
+            return false;
         }
-    }
 
-    /**
-     * Broadcast message đến tất cả clients
-     */
+        session.last_heartbeat = Date.now();
+        await session.save();
+        return true;
+    } catch (error) {
+        console.error('requireAuth error:', error);
+        send(ws, { status: 'fail', event, mes: 'AUTH_ERROR' });
+        return false;
+    }
+}
+
+// Khởi tạo WebSocket server
+async function startServer() {
+    // Initialize database first
+    await initializeDatabase();
+
+    // Tạo HTTP server
+    const http = require('http');
+    const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+            res.writeHead(200);
+            res.end();
+            return;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('WebSocket server is running\n');
+    });
+
+    // Tạo WebSocket server
+    const wss = new WebSocket.Server({
+        server,
+        path: WS_PATH,
+        verifyClient: (info, cb) => {
+            console.log('Client connecting from:', info.origin || info.req.headers.origin);
+            cb(true);
+        }
+    });
+
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 HTTP server running at http://0.0.0.0:${PORT}`);
+        console.log(`🚀 WebSocket server running at ws://0.0.0.0:${PORT}${WS_PATH}`);
+    });
+
+    // Broadcast functions
     function broadcastToAll(payload, excludeWs = null) {
         wss.clients.forEach(client => {
             if (client.readyState === WebSocket.OPEN && client !== excludeWs) {
@@ -86,9 +229,6 @@ async function startServer() {
         });
     }
 
-    /**
-     * Broadcast message đến tất cả members trong room
-     */
     async function broadcastToRoom(roomName, payload, excludeWs = null) {
         try {
             const members = await RoomMember.findAll({ where: { roomName } });
@@ -108,9 +248,6 @@ async function startServer() {
         }
     }
 
-    /**
-     * Broadcast message đến một user cụ thể
-     */
     function broadcastToUser(username, payload, excludeWs = null) {
         const sockets = online.get(username);
         if (!sockets) return;
@@ -122,109 +259,7 @@ async function startServer() {
         }
     }
 
-    /**
-     * Format thời gian theo giờ Việt Nam
-     */
-    function formatVietnamTime(timestamp) {
-        const date = new Date(timestamp);
-        const vietnamTime = new Date(date.getTime() + (TIMEZONE_OFFSET * 60 * 60 * 1000));
-
-        const year = vietnamTime.getUTCFullYear();
-        const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
-        const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
-        const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(vietnamTime.getUTCSeconds()).padStart(2, '0');
-
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
-
-    /**
-     * Cập nhật danh sách user cho client
-     */
-    async function broadcastUserListUpdate(username, excludeWs = null) {
-        try {
-            // Lấy danh sách user/room của user này
-            const peopleMessages = await Message.findAll({
-                attributes: ['fromUser', 'toTarget'],
-                where: {
-                    type: 'people',
-                    [Op.or]: [{ fromUser: username }, { toTarget: username }]
-                },
-                raw: true
-            });
-
-            const rooms = await RoomMember.findAll({
-                attributes: ['roomName'],
-                where: { username },
-                raw: true
-            });
-
-            const userSet = new Set();
-            const roomSet = new Set();
-
-            peopleMessages.forEach(msg => {
-                if (msg.fromUser && msg.fromUser !== username) userSet.add(msg.fromUser);
-                if (msg.toTarget && msg.toTarget !== username) userSet.add(msg.toTarget);
-            });
-
-            rooms.forEach(room => {
-                if (room.roomName) roomSet.add(room.roomName);
-            });
-
-            const userList = [
-                ...Array.from(userSet).map(name => ({ name, type: 0 })),
-                ...Array.from(roomSet).map(name => ({ name, type: 1 }))
-            ];
-
-            // Gửi cập nhật cho tất cả các socket của user này
-            const sockets = online.get(username);
-            if (sockets) {
-                for (const sock of sockets) {
-                    if (sock.readyState === WebSocket.OPEN && sock !== excludeWs) {
-                        send(sock, {
-                            status: 'success',
-                            event: 'GET_USER_LIST',
-                            data: userList
-                        });
-                    }
-                }
-            }
-        } catch (err) {
-            console.error('broadcastUserListUpdate error:', err);
-        }
-    }
-
-    /**
-     * Kiểm tra authentication
-     */
-    async function requireAuth(ws, event) {
-        if (!ws.username || !ws.session_id) {
-            send(ws, { status: 'fail', event, mes: 'NOT_AUTHENTICATED' });
-            return false;
-        }
-
-        try {
-            const session = await ActiveUserSession.findOne({
-                where: { username: ws.username, session_id: ws.session_id }
-            });
-
-            if (!session) {
-                send(ws, { status: 'fail', event, mes: 'SESSION_INVALID_OR_EXPIRED' });
-                return false;
-            }
-
-            session.last_heartbeat = Date.now();
-            await session.save();
-            return true;
-        } catch (error) {
-            console.error('requireAuth error:', error);
-            send(ws, { status: 'fail', event, mes: 'AUTH_ERROR' });
-            return false;
-        }
-    }
-
-    // KEEP-ALIVE: Kiểm tra kết nối sống
+    // KEEP-ALIVE
     setInterval(() => {
         wss.clients.forEach(ws => {
             if (ws.isAlive === false) {
@@ -236,7 +271,7 @@ async function startServer() {
         });
     }, KEEP_ALIVE_INTERVAL);
 
-    // Cleanup session hết hạn
+    // Cleanup session
     setInterval(async () => {
         try {
             const expiredSessions = await ActiveUserSession.findAll({
@@ -258,7 +293,7 @@ async function startServer() {
         }
     }, SESSION_CLEANUP_INTERVAL);
 
-    // Xử lý kết nối WebSocket mới
+    // WebSocket connection handler
     wss.on('connection', (ws, req) => {
         ws.isAlive = true;
 
@@ -268,7 +303,6 @@ async function startServer() {
 
         console.log('🟢 Client connected from:', req.socket.remoteAddress);
 
-        // Xử lý đóng kết nối
         ws.on('close', async () => {
             try {
                 if (ws.username && online.has(ws.username)) {
@@ -279,7 +313,6 @@ async function startServer() {
                         online.delete(ws.username);
                         console.log(`🔴 User ${ws.username} disconnected`);
 
-                        // Delay trước khi xóa session để tránh mất session khi reconnect nhanh
                         setTimeout(async () => {
                             if (!online.has(ws.username)) {
                                 await ActiveUserSession.destroy({ where: { username: ws.username } });
@@ -299,7 +332,6 @@ async function startServer() {
 
         ws.on('error', (err) => console.error('WebSocket error:', err));
 
-        // Xử lý message từ client
         ws.on('message', async (raw) => {
             let msg;
             try {
@@ -315,7 +347,7 @@ async function startServer() {
             const { event, data: payload } = data;
             if (!event) return;
 
-            console.log(`📨 Event: ${event}`, payload ? JSON.stringify(payload).substring(0, 100) : '{}');
+            console.log(`📨 Event: ${event}`);
 
             try {
                 switch (event) {
@@ -358,10 +390,9 @@ async function startServer() {
                             });
                         }
 
-                        // Kiểm tra session cũ
                         const existing = await ActiveUserSession.findOne({ where: { username: inputUser } });
                         if (existing) {
-                            console.log(`[LOGIN] Đã có session trước của ${inputUser}, sẽ force logout các socket cũ`);
+                            console.log(`[LOGIN] Đã có session trước của ${inputUser}`);
                             await forceLogoutUser(inputUser);
                             try {
                                 await existing.destroy();
@@ -370,7 +401,6 @@ async function startServer() {
                             }
                         }
 
-                        // Tạo session mới
                         const sessionId = SESSION_PREFIX + uuidv4().replace(/-/g, '');
                         const code = RELOGIN_PREFIX + uuidv4().replace(/-/g, '').substring(0, 10);
 
@@ -501,7 +531,6 @@ async function startServer() {
                         const room = await Room.findOne({ where: { name } });
                         if (!room) return send(ws, { status: 'fail', event: 'JOIN_ROOM', mes: 'ROOM_NOT_FOUND' });
 
-                        // Kiểm tra đã là member chưa
                         const existingMember = await RoomMember.findOne({
                             where: { roomName: name, username: ws.username }
                         });
@@ -510,14 +539,12 @@ async function startServer() {
                             await RoomMember.create({ roomName: name, username: ws.username });
                         }
 
-                        // Gửi response thành công
                         send(ws, {
                             status: 'success',
                             event: 'JOIN_ROOM',
                             data: { name }
                         });
 
-                        // Broadcast cập nhật user list cho user này
                         await broadcastUserListUpdate(ws.username, ws);
                         break;
                     }
@@ -538,7 +565,6 @@ async function startServer() {
                             });
                         }
 
-                        // Kiểm tra tính hợp lệ của target
                         if (type === 'room') {
                             const room = await Room.findOne({ where: { name: to } });
                             if (!room) return send(ws, { status: 'fail', event: 'SEND_CHAT', mes: 'ROOM_NOT_FOUND' });
@@ -552,10 +578,8 @@ async function startServer() {
                             return send(ws, { status: 'fail', event: 'SEND_CHAT', mes: 'INVALID_TYPE' });
                         }
 
-                        // Sử dụng timestamp từ client nếu có, nếu không thì dùng thời gian server
                         const timestamp = clientTimestamp || Date.now();
 
-                        // Lưu timestamp gốc (UTC) vào database
                         const message = await Message.create({
                             type,
                             fromUser: ws.username,
@@ -564,7 +588,6 @@ async function startServer() {
                             timestamp
                         });
 
-                        // Format createAt theo giờ Việt Nam để gửi xuống client
                         const messageData = {
                             ...message.toJSON(),
                             type: type === 'room' ? 1 : 0,
@@ -755,7 +778,7 @@ async function startServer() {
     });
 }
 
-// Xử lý lỗi không bắt được
+// Xử lý lỗi
 process.on('uncaughtException', (err) => {
     console.error('❌ Uncaught Exception:', err);
 });

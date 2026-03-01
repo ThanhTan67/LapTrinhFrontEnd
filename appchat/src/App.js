@@ -93,7 +93,7 @@ function App() {
             console.error('❌ WebSocket URL not configured in .env file');
             console.log('📝 Using default URL for development');
             // Fallback to localhost for development
-            initializeSocket('ws://localhost:8080/chat');
+            const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
         } else {
             console.log('🔌 Connecting to WebSocket:', wsUrl);
             initializeSocket(wsUrl);
