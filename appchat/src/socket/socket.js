@@ -30,326 +30,398 @@ import {
     appendIncomingMessage,
 } from "../redux/action/action";
 import {clearSessionData, markThisTabAsActive, isThisTabActive} from '../utils/single-tab-auth';
+
 export let socket;
 export let isSocketOpen = false;
 export const messageQueue = [];
 let heartbeatInterval = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY = 3000;
+
+// Hàm gửi message an toàn
 const sendMessageInternal = (message) => {
     if (socket?.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(message));
+        return true;
     } else if (socket?.readyState === WebSocket.CONNECTING) {
+        console.log('📦 WebSocket đang kết nối, xếp tin nhắn vào hàng đợi');
         messageQueue.push(message);
+        return false;
     } else {
-        console.warn("Socket is not open, cannot send:", message);
+        console.warn("⚠️ Socket không mở, không thể gửi:", message);
+        return false;
     }
 };
+
+// Xử lý hàng đợi tin nhắn
+const processMessageQueue = () => {
+    while (messageQueue.length > 0 && socket?.readyState === WebSocket.OPEN) {
+        const message = messageQueue.shift();
+        socket.send(JSON.stringify(message));
+        console.log('📤 Đã gửi tin nhắn từ hàng đợi');
+    }
+};
+
+// Khởi tạo WebSocket
 export const initializeSocket = (url) => {
-    if (socket && socket.readyState !== WebSocket.CLOSED) {
+    // Kiểm tra URL
+    if (!url) {
+        console.error('❌ WebSocket URL không được cấu hình');
+        toast.error('Lỗi cấu hình kết nối!', {autoClose: 5000});
         return;
     }
-    socket = new WebSocket(url);
-    window.socket = socket;
-    socket.onopen = () => {
-        isSocketOpen = true;
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        heartbeatInterval = setInterval(() => {
-            if (socket?.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    action: "onchat",
-                    data: {event: "HEARTBEAT", data: {}}
-                }));
+
+    // Đóng kết nối cũ nếu có
+    if (socket && socket.readyState !== WebSocket.CLOSED) {
+        socket.close();
+    }
+
+    console.log('🔌 Đang kết nối WebSocket đến:', url);
+
+    try {
+        socket = new WebSocket(url);
+        window.socket = socket;
+
+        socket.onopen = () => {
+            console.log('✅ WebSocket đã kết nối thành công!');
+            isSocketOpen = true;
+            reconnectAttempts = 0; // Reset số lần thử kết nối lại
+
+            // Xử lý heartbeat
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(() => {
+                if (socket?.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        action: "onchat",
+                        data: {event: "HEARTBEAT", data: {}}
+                    }));
+                }
+            }, 25000); // Gửi heartbeat mỗi 25s
+
+            // Xử lý hàng đợi tin nhắn
+            processMessageQueue();
+
+            // Relogin nếu có thông tin
+            const username = localStorage.getItem('username');
+            const reloginCode = localStorage.getItem('reLogin');
+
+            if (username && reloginCode && isThisTabActive()) {
+                console.log('🔄 Đang thực hiện relogin cho:', username);
+                reLoginUser(username, reloginCode);
             }
-        }, 25000); // < 30s
-        const username = localStorage.getItem('username');
-        const reloginCode = localStorage.getItem('reLogin');
-        // Chỉ relogin nếu tab này đang active
-        if (username && reloginCode && isThisTabActive()) {
-            reLoginUser(username, reloginCode);
-        }
-    };
-    socket.onmessage = (event) => {
-        const rawData = event.data;
-        if (typeof rawData !== 'string' || !rawData.trim()) {
-            console.log('[WS] Ignored non-text/empty message');
-            return;
-        }
-        let response;
-        try {
-            response = JSON.parse(rawData);
-        } catch (err) {
-            console.error('[WS] JSON parse error:', err, 'Raw:', rawData);
-            return;
-        }
-        if (!response || !response.event) {
-            console.warn('[WS] Invalid message - missing event:', response);
-            return;
-        }
-        console.log('[WS] Received event:', response.event, response);
-        switch (response.event) {
-            case "REGISTER":
-                if (response.status === "success") {
-                    store.dispatch(registerSuccess(response.data || {}));
-                    toast.success("Đăng ký thành công!", {autoClose: 3000});
-                } else {
-                    store.dispatch(registerError(response.mes || 'Đăng ký thất bại'));
-                    toast.error(response.mes || 'Đăng ký thất bại', {autoClose: 5000});
-                }
-                break;
-            case "LOGIN":
-                if (response.status === "success") {
-                    localStorage.setItem("reLogin", response.data.RE_LOGIN_CODE);
-                    if (response.data.user) {
-                        localStorage.setItem('username', response.data.user);
+        };
+
+        socket.onmessage = (event) => {
+            const rawData = event.data;
+            if (typeof rawData !== 'string' || !rawData.trim()) {
+                return;
+            }
+
+            let response;
+            try {
+                response = JSON.parse(rawData);
+            } catch (err) {
+                console.error('[WS] Lỗi parse JSON:', err, 'Raw:', rawData);
+                return;
+            }
+
+            if (!response || !response.event) {
+                console.warn('[WS] Message không hợp lệ:', response);
+                return;
+            }
+
+            console.log('[WS] Nhận event:', response.event, response);
+
+            // Xử lý các event (giữ nguyên code xử lý của bạn)
+            switch (response.event) {
+                case "REGISTER":
+                    if (response.status === "success") {
+                        store.dispatch(registerSuccess(response.data || {}));
+                        toast.success("Đăng ký thành công!", {autoClose: 3000});
+                    } else {
+                        store.dispatch(registerError(response.mes || 'Đăng ký thất bại'));
+                        toast.error(response.mes || 'Đăng ký thất bại', {autoClose: 5000});
                     }
-                    store.dispatch(loginSuccess(response.data));
-                    if (heartbeatInterval) clearInterval(heartbeatInterval);
-                    heartbeatInterval = setInterval(() => {
-                        if (socket?.readyState === WebSocket.OPEN) {
-                            socket.send(JSON.stringify({action: "onchat", data: {event: "HEARTBEAT", data: {}}}));
+                    break;
+
+                case "LOGIN":
+                    if (response.status === "success") {
+                        localStorage.setItem("reLogin", response.data.RE_LOGIN_CODE);
+                        if (response.data.user) {
+                            localStorage.setItem('username', response.data.user);
                         }
-                    }, 30000);
-                    toast.success("Đăng nhập thành công!", {autoClose: 3000});
-                    const username = localStorage.getItem('username');
-                    if (username) markThisTabAsActive(username);
-                } else {
-                    const errorMsg = response.mes || "Đăng nhập thất bại";
-                    store.dispatch(loginError(errorMsg));
-                    toast.error(errorMsg, {autoClose: 8000});
-                    localStorage.removeItem('reLogin');
-                }
-                break;
-            case "RE_LOGIN":
-                if (response.status === "success") {
-                    localStorage.setItem("reLogin", response.data.RE_LOGIN_CODE);
-                    if (response.data.user) {
-                        localStorage.setItem('username', response.data.user);
+                        store.dispatch(loginSuccess(response.data));
+                        toast.success("Đăng nhập thành công!", {autoClose: 3000});
+                        const username = localStorage.getItem('username');
+                        if (username) markThisTabAsActive(username);
+                    } else {
+                        const errorMsg = response.mes || "Đăng nhập thất bại";
+                        store.dispatch(loginError(errorMsg));
+                        toast.error(errorMsg, {autoClose: 8000});
+                        localStorage.removeItem('reLogin');
                     }
-                    store.dispatch(reLoginSuccess(response.data));
-                    if (heartbeatInterval) clearInterval(heartbeatInterval);
-                    heartbeatInterval = setInterval(() => {
-                        if (socket?.readyState === WebSocket.OPEN) {
-                            socket.send(JSON.stringify({action: "onchat", data: {event: "HEARTBEAT", data: {}}}));
+                    break;
+
+                case "RE_LOGIN":
+                    if (response.status === "success") {
+                        localStorage.setItem("reLogin", response.data.RE_LOGIN_CODE);
+                        if (response.data.user) {
+                            localStorage.setItem('username', response.data.user);
                         }
-                    }, 30000);
-                    toast.success("Đã khôi phục phiên đăng nhập thành công!", {autoClose: 3000});
-                    const username = localStorage.getItem('username');
-                    if (username) markThisTabAsActive(username);
-                } else {
-                    const errorMsg = response.mes || "Phiên hết hạn. Vui lòng đăng nhập lại.";
-                    store.dispatch(reLoginError(errorMsg));
-                    toast.error(errorMsg, {autoClose: 8000});
-                    localStorage.removeItem('reLogin');
-                    window.location.href = "/login";
-                }
-                break;
-            case "LOGOUT":
-                if (response.status === "success") {
-                    if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        store.dispatch(reLoginSuccess(response.data));
+                        toast.success("Đã khôi phục phiên đăng nhập!", {autoClose: 3000});
+                        const username = localStorage.getItem('username');
+                        if (username) markThisTabAsActive(username);
+                    } else {
+                        const errorMsg = response.mes || "Phiên hết hạn. Vui lòng đăng nhập lại.";
+                        store.dispatch(reLoginError(errorMsg));
+                        toast.error(errorMsg, {autoClose: 8000});
+                        localStorage.removeItem('reLogin');
+                        window.location.href = "/login";
+                    }
+                    break;
+
+                case "LOGOUT":
+                    if (response.status === "success") {
+                        if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        clearSessionData();
+                        store.dispatch(logoutSuccess(response.data || {}));
+                        toast.info("Đã đăng xuất thành công", {autoClose: 4000});
+                    } else {
+                        store.dispatch(logoutError(response.mes));
+                        toast.error(response.mes || "Đăng xuất thất bại", {autoClose: 5000});
+                    }
+                    break;
+
+                case "FORCE_LOGOUT":
                     clearSessionData();
-                    store.dispatch(logoutSuccess(response.data || {}));
-                    toast.info("Đã đăng xuất thành công", {autoClose: 4000});
-                } else {
-                    store.dispatch(logoutError(response.mes));
-                    toast.error(response.mes || "Đăng xuất thất bại", {autoClose: 5000});
-                }
-                break;
-            case "FORCE_LOGOUT":
-                clearSessionData();
-                store.dispatch(logoutSuccess({}));
-                toast.info(response.mes || "Phiên đăng nhập đã bị kết thúc từ nơi khác.", {autoClose: 6000});
-                window.location.href = "/login";
-                break;
-            case "USER_STATUS":
-                if (response.data?.username && typeof response.data.online === 'boolean') {
-                    store.dispatch({
-                        type: 'UPDATE_USER_ONLINE_STATUS',
-                        payload: response.data.username,
-                        data: response.data.online ? "online" : "offline"
-                    });
-                }
-                break;
-            // socket.js - Sửa phần xử lý SEND_CHAT và NEW_CHAT
-
-            case "SEND_CHAT": {
-                if (response.status !== "success") {
-                    toast.error(response.mes || "Gửi tin nhắn thất bại");
+                    store.dispatch(logoutSuccess({}));
+                    toast.info(response.mes || "Phiên đăng nhập đã bị kết thúc từ nơi khác.", {autoClose: 6000});
+                    window.location.href = "/login";
                     break;
-                }
-                const msg = response.data;
-                msg.type = msg.type === 1 ? 1 : 0;
 
-                // KHÔNG thay đổi createAt, giữ nguyên format từ server
-                // Server đã format theo giờ Việt Nam rồi
+                case "USER_STATUS":
+                    if (response.data?.username && typeof response.data.online === 'boolean') {
+                        store.dispatch({
+                            type: 'UPDATE_USER_ONLINE_STATUS',
+                            payload: response.data.username,
+                            data: response.data.online ? "online" : "offline"
+                        });
+                    }
+                    break;
 
-                store.dispatch(appendOwnMessage(msg));
-                break;
+                case "SEND_CHAT":
+                    if (response.status !== "success") {
+                        toast.error(response.mes || "Gửi tin nhắn thất bại");
+                        break;
+                    }
+                    const msg = response.data;
+                    msg.type = msg.type === 1 ? 1 : 0;
+                    store.dispatch(appendOwnMessage(msg));
+                    break;
+
+                case "NEW_CHAT":
+                    if (response.status !== "success") {
+                        console.warn("NEW_CHAT failed:", response.mes);
+                        break;
+                    }
+                    const newMsg = response.data;
+                    newMsg.type = newMsg.type === 1 ? 1 : 0;
+                    store.dispatch(appendIncomingMessage(newMsg));
+                    break;
+
+                case "GET_PEOPLE_CHAT_MES":
+                    if (response.status === "success") {
+                        store.dispatch(getPeopleChatMesSuccess(response.data || []));
+                    } else {
+                        store.dispatch(getPeopleChatMesFailure(response.mes || 'Lỗi tải tin nhắn'));
+                        toast.error(response.mes || 'Lỗi tải tin nhắn', {autoClose: 5000});
+                    }
+                    break;
+
+                case "GET_ROOM_CHAT_MES":
+                    if (response.status === "success") {
+                        store.dispatch(getRoomChatMesSuccess(response.data));
+                    } else {
+                        store.dispatch(getRoomChatMesFailure(response.mes || 'Lỗi tải tin nhắn phòng'));
+                        toast.error(response.mes || 'Lỗi tải tin nhắn phòng', {autoClose: 5000});
+                    }
+                    break;
+
+                case "GET_USER_LIST":
+                    if (response.status === "success") {
+                        store.dispatch(getUserListSuccess(response.data || []));
+                    } else {
+                        store.dispatch(getUserListFailure(response.mes || 'Lỗi tải danh sách'));
+                        toast.error(response.mes || 'Lỗi tải danh sách', {autoClose: 5000});
+                    }
+                    break;
+
+                case "CREATE_ROOM":
+                    if (response.status === "success") {
+                        store.dispatch(createRoomSuccess(response.data || {}));
+                    } else {
+                        store.dispatch(createRoomError(response.mes || 'Tạo nhóm thất bại'));
+                        toast.error(response.mes || 'Tạo nhóm thất bại', {autoClose: 5000});
+                    }
+                    break;
+
+                case "JOIN_ROOM":
+                    if (response.status === "success") {
+                        store.dispatch(joinRoomSuccess(response.data || {}));
+                        setTimeout(() => {
+                            getUsersList();
+                        }, 100);
+                    } else {
+                        store.dispatch(joinRoomFailure(response.mes || 'Tham gia nhóm thất bại'));
+                        toast.error(response.mes || 'Tham gia nhóm thất bại', {autoClose: 5000});
+                    }
+                    break;
+
+                default:
+                    console.log('[WS] Unhandled event:', response.event);
+            }
+        };
+
+        socket.onclose = (event) => {
+            isSocketOpen = false;
+            console.log('🔴 WebSocket đã đóng. Code:', event.code, 'Reason:', event.reason);
+
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
             }
 
-            case "NEW_CHAT": {
-                if (response.status !== "success") {
-                    console.warn("NEW_CHAT failed:", response.mes);
-                    break;
-                }
-                const msg = response.data;
-                msg.type = msg.type === 1 ? 1 : 0;
+            // Thử kết nối lại nếu chưa quá số lần cho phép
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                const delay = RECONNECT_DELAY * reconnectAttempts; // Tăng dần thời gian chờ
+                console.log(`🔄 Đang thử kết nối lại lần ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} sau ${delay/1000}s`);
 
-                // KHÔNG thay đổi createAt, giữ nguyên format từ server
-                // Server đã format theo giờ Việt Nam rồi
+                toast.warn(`Mất kết nối. Đang thử lại (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`, {
+                    autoClose: 2000
+                });
 
-                store.dispatch(appendIncomingMessage(msg));
-                break;
+                setTimeout(() => {
+                    initializeSocket(url);
+                }, delay);
+            } else {
+                console.error('❌ Không thể kết nối lại sau nhiều lần thử');
+                toast.error('Không thể kết nối đến server. Vui lòng tải lại trang!', {
+                    autoClose: false,
+                    closeButton: true
+                });
             }
+        };
 
-            case "GET_PEOPLE_CHAT_MES":
-                if (response.status === "success") {
-                    // Giữ nguyên createAt từ server
-                    store.dispatch(getPeopleChatMesSuccess(response.data || []));
-                } else {
-                    store.dispatch(getPeopleChatMesFailure(response.mes || 'Lỗi tải tin nhắn'));
-                    toast.error(response.mes || 'Lỗi tải tin nhắn', {autoClose: 5000});
-                }
-                break;
+        socket.onerror = (error) => {
+            console.error("❌ Lỗi WebSocket:", error);
+            // Không toast ở đây vì onclose sẽ xử lý
+        };
 
-            case "GET_ROOM_CHAT_MES":
-                if (response.status === "success") {
-                    // Giữ nguyên createAt từ server
-                    store.dispatch(getRoomChatMesSuccess(response.data));
-                } else {
-                    store.dispatch(getRoomChatMesFailure(response.mes || 'Lỗi tải tin nhắn phòng'));
-                    toast.error(response.mes || 'Lỗi tải tin nhắn phòng', {autoClose: 5000});
-                }
-                break;
-            // case "NEW_CHAT": {
-            //     if (response.status !== "success") {
-            //         console.warn("NEW_CHAT failed:", response.mes);
-            //         break;
-            //     }
-            //     const msg = response.data;
-            //     msg.type = msg.type === 1 ? 1 : 0;
-            //     if (msg.createAt) {
-            //         msg.createAt = msg.createAt.replace('T', ' ').slice(0, 19);
-            //     }
-            //     store.dispatch(appendIncomingMessage(msg));
-                // Toast thông báo tin nhắn mới (nếu không ở chat đó)
-                // const rootState = store.getState();
-                // const active = rootState.socket?.active || {name: '', type: null}; // điều chỉnh theo reducer của bạn
-                // const currentUser = localStorage.getItem('username');
-                // let shouldNotify = true;
-                // if (active?.name) {
-                //     if (active.type === 0) {
-                //         shouldNotify = !(
-                //             (active.name === msg.fromUser && msg.toTarget === currentUser) ||
-                //             (active.name === msg.toTarget && msg.fromUser === currentUser)
-                //         );
-                //     } else if (active.type === 1) {
-                //         shouldNotify = msg.toTarget !== active.name;
-                //     }
-                // }
-                // if (shouldNotify) {
-                //     toast.info(`Tin nhắn mới từ ${msg.fromUser}`, {
-                //         autoClose: 4000,
-                //         position: "top-right",
-                //     });
-                // }
-            //     break;
-            // }
-            // case "GET_PEOPLE_CHAT_MES":
-            //     response.status === "success"
-            //         ? store.dispatch(getPeopleChatMesSuccess(response.data || []))
-            //         : store.dispatch(getPeopleChatMesFailure(response.mes || 'Lỗi tải tin nhắn'));
-            //     if (response.status !== "success") {
-            //         toast.error(response.mes || 'Lỗi tải tin nhắn', {autoClose: 5000});
-            //     }
-            //     break;
-            // case "GET_ROOM_CHAT_MES":
-            //     response.status === "success"
-            //         ? store.dispatch(getRoomChatMesSuccess(response.data))
-            //         : store.dispatch(getRoomChatMesFailure(response.mes || 'Lỗi tải tin nhắn phòng'));
-            //     if (response.status !== "success") {
-            //         toast.error(response.mes || 'Lỗi tải tin nhắn phòng', {autoClose: 5000});
-            //     }
-            //     break;
-            case "GET_USER_LIST":
-                response.status === "success"
-                    ? store.dispatch(getUserListSuccess(response.data || []))
-                    : store.dispatch(getUserListFailure(response.mes || 'Lỗi tải danh sách'));
-                if (response.status !== "success") {
-                    toast.error(response.mes || 'Lỗi tải danh sách', {autoClose: 5000});
-                }
-                break;
-            case "CREATE_ROOM":
-                if (response.status === "success") {
-                    store.dispatch(createRoomSuccess(response.data || {}));
-                    // KHÔNG toast ở đây nữa → để ChatTab xử lý
-                } else {
-                    store.dispatch(createRoomError(response.mes || 'Tạo nhóm thất bại'));
-                    // Error thì vẫn để socket toast (vì modal có thể chưa mở)
-                    toast.error(response.mes || 'Tạo nhóm thất bại', {autoClose: 5000});
-                }
-                break;
-            case "JOIN_ROOM":
-                if (response.status === "success") {
-                    store.dispatch(joinRoomSuccess(response.data || {}));
-                    // Gọi getUsersList ngay lập tức để cập nhật danh sách
-                    setTimeout(() => {
-                        getUsersList();
-                    }, 100);
-                } else {
-                    store.dispatch(joinRoomFailure(response.mes || 'Tham gia nhóm thất bại'));
-                    toast.error(response.mes || 'Tham gia nhóm thất bại', {autoClose: 5000});
-                }
-                break;
-            default:
-                console.log('[WS] Unhandled event:', response.event);
-        }
-    };
-    socket.onclose = () => {
-        isSocketOpen = false;
-        console.log('WebSocket closed. Reconnecting in 5s...');
-        if (heartbeatInterval) {
-            clearInterval(heartbeatInterval);
-            heartbeatInterval = null;
-        }
-        toast.warn("Kết nối bị mất. Đang kết nối lại...", {autoClose: 3000});
-        setTimeout(() => initializeSocket(url), 5000);
-    };
-    socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        toast.error("Lỗi kết nối WebSocket!", {autoClose: 5000});
-    };
+    } catch (error) {
+        console.error('❌ Lỗi khởi tạo WebSocket:', error);
+        toast.error('Lỗi khởi tạo kết nối!', {autoClose: 5000});
+    }
 };
+
+// Cập nhật các hàm gửi để sử dụng sendMessageInternal
 export const loginUser = (user, pass) => {
     sendMessageInternal({
         action: "onchat",
         data: {event: "LOGIN", data: {user, pass}}
     });
 };
+
 export const reLoginUser = (user, code) => {
     sendMessageInternal({
         action: "onchat",
         data: {event: "RE_LOGIN", data: {user, code}}
     });
 };
+
 export const logoutUsers = () => {
     sendMessageInternal({
         action: "onchat",
         data: {event: "LOGOUT"}
     });
 };
+
+export const register = (user, pass) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "REGISTER", data: {user, pass}}
+    });
+};
+
+export const create_room = (name) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "CREATE_ROOM", data: {name}}
+    });
+};
+
+export const joinRoom = (name) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "JOIN_ROOM", data: {name}}
+    });
+};
+
+export const sendChatToPeople = (to, mes, timestamp = Date.now()) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "SEND_CHAT", data: {type: "people", to, mes, timestamp}}
+    });
+};
+
+export const sendChatToRoom = (to, mes, timestamp = Date.now()) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "SEND_CHAT", data: {type: "room", to, mes, timestamp}}
+    });
+};
+
+export const getUsersList = () => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "GET_USER_LIST"}
+    });
+};
+
+export const getPeopleChatMes = (name) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "GET_PEOPLE_CHAT_MES", data: {name, page: 1}}
+    });
+};
+
+export const getRoomChatMes = (name) => {
+    sendMessageInternal({
+        action: "onchat",
+        data: {event: "GET_ROOM_CHAT_MES", data: {name, page: 1}}
+    });
+};
+
+// Hàm kiểm tra user tồn tại (giữ nguyên)
 export const checkUserExists = (username) => {
     return new Promise((resolve, reject) => {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
             reject(new Error("Socket chưa kết nối"));
             return;
         }
+
         const trimmed = username.trim();
         if (!trimmed) {
             resolve(false);
             return;
         }
+
         const timeout = setTimeout(() => {
             reject(new Error("Timeout khi kiểm tra user"));
         }, 5000);
+
         const handler = (event) => {
             try {
                 const response = JSON.parse(event.data);
@@ -358,7 +430,7 @@ export const checkUserExists = (username) => {
                     clearTimeout(timeout);
                     socket.removeEventListener('message', handler);
                     if (response.status === 'success') {
-                        resolve(!!response.data.exists); // true/false
+                        resolve(!!response.data.exists);
                     } else {
                         reject(new Error(response.mes || 'Lỗi server'));
                     }
@@ -367,22 +439,37 @@ export const checkUserExists = (username) => {
                 console.error('Check user parse error', e);
             }
         };
+
         socket.addEventListener('message', handler);
+
         sendMessageInternal({
             action: 'onchat',
             data: {
                 event: 'CHECK_USER_EXISTS',
-                data: {username: trimmed} // ← Phải bọc trong "data"
+                data: {username: trimmed}
             }
         });
     });
 };
+
+// Hàm kiểm tra room tồn tại (giữ nguyên)
 export const checkRoomExists = (roomName) => {
     return new Promise((resolve, reject) => {
-        if (!socket || socket.readyState !== WebSocket.OPEN) { reject(new Error("Socket chưa kết nối")); return; }
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            reject(new Error("Socket chưa kết nối"));
+            return;
+        }
+
         const trimmed = roomName.trim();
-        if (!trimmed) { resolve(false); return; }
-        const timeout = setTimeout(() => reject(new Error("Timeout khi kiểm tra nhóm")), 5000);
+        if (!trimmed) {
+            resolve(false);
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            reject(new Error("Timeout khi kiểm tra nhóm"));
+        }, 5000);
+
         const handler = (event) => {
             try {
                 const response = JSON.parse(event.data);
@@ -395,113 +482,38 @@ export const checkRoomExists = (roomName) => {
                         reject(new Error(response.mes || 'Lỗi server'));
                     }
                 }
-            } catch (e) { console.error('Check room parse error', e); }
+            } catch (e) {
+                console.error('Check room parse error', e);
+            }
         };
+
         socket.addEventListener('message', handler);
-        sendMessageInternal({ action: 'onchat', data: { event: 'CHECK_ROOM_EXISTS', data: { name: trimmed } } });
+
+        sendMessageInternal({
+            action: 'onchat',
+            data: {
+                event: 'CHECK_ROOM_EXISTS',
+                data: { name: trimmed }
+            }
+        });
     });
 };
-export const getUsersList = () => {
-    if (!socket) return;
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            action: "onchat",
-            data: {event: "GET_USER_LIST"},
-        }));
-    } else if (socket.readyState === WebSocket.CONNECTING) {
-        console.log("WebSocket connecting. Retry getUsersList in 1s.");
-        setTimeout(getUsersList, 1000);
-    }
-};
-export const getPeopleChatMes = (name) => {
-    if (!socket) return;
-    const send = () => {
-        socket.send(JSON.stringify({
-            action: "onchat",
-            data: {event: "GET_PEOPLE_CHAT_MES", data: {name, page: 1}}
-        }));
-    };
-    if (socket.readyState === WebSocket.OPEN) {
-        send();
-    } else if (socket.readyState === WebSocket.CONNECTING) {
-        const interval = setInterval(() => {
-            if (socket.readyState === WebSocket.OPEN) {
-                clearInterval(interval);
-                send();
-            }
-        }, 100);
-    }
-};
-export const getRoomChatMes = (name) => {
-    if (!socket) return;
-    const send = () => {
-        socket.send(JSON.stringify({
-            action: "onchat",
-            data: {event: "GET_ROOM_CHAT_MES", data: {name, page: 1}}
-        }));
-    };
-    if (socket.readyState === WebSocket.OPEN) {
-        send();
-    } else if (socket.readyState === WebSocket.CONNECTING) {
-        const interval = setInterval(() => {
-            if (socket.readyState === WebSocket.OPEN) {
-                clearInterval(interval);
-                send();
-            }
-        }, 100);
-    }
-};
-export const register = (user, pass) => {
-    if (!socket) return;
-    socket.send(JSON.stringify({
-        action: "onchat",
-        data: {event: "REGISTER", data: {user, pass}},
-    }));
-};
-export const create_room = (name) => {
-    if (!socket) return;
-    socket.send(JSON.stringify({
-        action: "onchat",
-        data: {event: "CREATE_ROOM", data: {name}}
-    }));
-};
-export const joinRoom = (name) => {
-    if (!socket) return;
-    socket.send(JSON.stringify({
-        action: "onchat",
-        data: {event: "JOIN_ROOM", data: {name}}
-    }));
-};
-export const sendChatToPeople = (to, mes, timestamp = Date.now()) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        messageQueue.push({ action: "onchat", data: {event: "SEND_CHAT", data: {type: "people", to, mes, timestamp}} });
-        return;
-    }
-    socket.send(JSON.stringify({
-        action: "onchat",
-        data: {event: "SEND_CHAT", data: {type: "people", to, mes, timestamp}}
-    }));
-};
 
-export const sendChatToRoom = (to, mes, timestamp = Date.now()) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({
-        action: "onchat",
-        data: {event: "SEND_CHAT", data: {type: "room", to, mes, timestamp}}
-    }));
-};
-// Giữ nguyên hàm checkUser cũ (online status)
+// Hàm kiểm tra user online (giữ nguyên)
 export const checkUser = async (username) => {
     return new Promise((resolve, reject) => {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
             resolve('offline');
             return;
         }
+
         const message = JSON.stringify({
             action: "onchat",
             data: {event: "CHECK_USER", data: {user: username}}
         });
+
         socket.send(message);
+
         const handler = (event) => {
             try {
                 const data = JSON.parse(event.data);
@@ -520,7 +532,9 @@ export const checkUser = async (username) => {
                 reject(err);
             }
         };
+
         socket.addEventListener("message", handler);
+
         setTimeout(() => {
             socket.removeEventListener("message", handler);
             store.dispatch(checkUserSuccess(username, "offline"));
@@ -530,12 +544,12 @@ export const checkUser = async (username) => {
 };
 
 export const getRoomMembers = (roomName) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
     sendMessageInternal({
         action: "onchat",
         data: { event: "GET_ROOM_MEMBERS", data: { name: roomName } }
     });
 };
+
 export const socketActions = {
     logoutUser: () => logoutUsers(),
 };

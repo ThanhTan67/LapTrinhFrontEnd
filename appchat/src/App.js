@@ -16,6 +16,8 @@ import ChatHeader from "./components/Chat/content/chatheader/chatheader";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import ProtectedRoute from './utils/protected-route';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -29,7 +31,7 @@ const firebaseConfig = {
     measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Kiểm tra biến môi trường đã được cấu hình chưa
+// Kiểm tra biến môi trường
 const validateFirebaseConfig = () => {
     const requiredKeys = [
         'apiKey', 'authDomain', 'databaseURL', 'projectId',
@@ -40,13 +42,12 @@ const validateFirebaseConfig = () => {
 
     if (missingKeys.length > 0) {
         console.error('❌ Missing Firebase configuration keys:', missingKeys);
-        console.error('📝 Please check your .env file');
         return false;
     }
     return true;
 };
 
-// Initialize Firebase only if config is valid
+// Initialize Firebase
 let app;
 let analytics;
 let database;
@@ -60,8 +61,6 @@ if (validateFirebaseConfig()) {
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
     }
-} else {
-    console.error('❌ Firebase configuration is invalid');
 }
 
 function checkFirebaseConnection() {
@@ -87,25 +86,45 @@ function App() {
 
     useEffect(() => {
         // Lấy WebSocket URL từ biến môi trường
-        // const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
-        const wsUrl = 'wss://serverchat.up.railway.app/chat';
+        const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
 
         if (!wsUrl) {
-            console.error('❌ WebSocket URL not configured in .env file');
-            console.log('📝 Using default URL for development');
-            // Fallback to localhost for development
-            initializeSocket(wsUrl);
+            console.error('❌ REACT_APP_WEBSOCKET_URL không được cấu hình trong .env');
+            // Fallback cho development
+            if (window.location.hostname === 'localhost') {
+                console.log('📝 Development mode: sử dụng localhost');
+                initializeSocket('ws://localhost:8080/chat');
+            } else {
+                console.error('❌ Không thể kết nối WebSocket: thiếu URL');
+            }
         } else {
-            console.log('🔌 Connecting to WebSocket:', wsUrl);
+            console.log('🔌 Khởi tạo WebSocket với URL:', wsUrl);
             initializeSocket(wsUrl);
             setWsConnected(true);
         }
 
+        // Kiểm tra Firebase
         checkFirebaseConnection();
+
+        // Cleanup khi unmount
+        return () => {
+            // Không đóng socket ở đây vì có thể ảnh hưởng đến các tab khác
+        };
     }, []);
 
     return (
         <Fragment>
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Navigate to="/Login" replace />} />
