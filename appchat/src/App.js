@@ -87,7 +87,8 @@ function App() {
 
     useEffect(() => {
         // Lấy WebSocket URL từ biến môi trường
-        const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
+        // const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
+        const wsUrl = 'wss://serverchat.up.railway.app/chat';
 
         if (!wsUrl) {
             console.error('❌ WebSocket URL not configured in .env file');
