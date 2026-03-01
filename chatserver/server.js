@@ -1,10 +1,24 @@
 // server.js
+require('dotenv').config();
 const WebSocket = require('ws');
 const {v4: uuidv4} = require('uuid');
 const {Op} = require('sequelize');
 const {User, ActiveUserSession, Room, RoomMember, Message} = require('./db');
-const wss = new WebSocket.Server({port: 8080, path: '/chat'});
+
+// Lấy giá trị từ biến môi trường
+const PORT = process.env.PORT || 8080;
+const WS_PATH = process.env.WS_PATH || '/chat';
+const SESSION_PREFIX = process.env.SESSION_PREFIX || 'sess_';
+const RELOGIN_PREFIX = process.env.RELOGIN_PREFIX || 'nlu_';
+const TIMEZONE_OFFSET = parseInt(process.env.TIMEZONE_OFFSET) || 7;
+const KEEP_ALIVE_INTERVAL = parseInt(process.env.KEEP_ALIVE_INTERVAL) || 30000;
+const SESSION_CLEANUP_INTERVAL = parseInt(process.env.SESSION_CLEANUP_INTERVAL) || 60000;
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 90000;
+const LOGOUT_DELAY = parseInt(process.env.LOGOUT_DELAY) || 5000;
+
+const wss = new WebSocket.Server({port: PORT, path: WS_PATH});
 const online = new Map(); // username → Set<ws>
+
 async function forceLogoutUser(username, excludeWs = null, reason = 'Đăng nhập từ nơi khác') {
     const sockets = online.get(username);
     if (!sockets) return;
@@ -69,12 +83,11 @@ function broadcastToUser(username, payload, excludeWs = null) {
     }
 }
 
-
 // Hàm helper để format thời gian theo giờ Việt Nam
 function formatVietnamTime(timestamp) {
     const date = new Date(timestamp);
     // Chuyển về giờ Việt Nam (UTC+7)
-    const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+    const vietnamTime = new Date(date.getTime() + (TIMEZONE_OFFSET * 60 * 60 * 1000));
 
     // Format YYYY-MM-DD HH:mm:ss
     const year = vietnamTime.getUTCFullYear();
@@ -157,7 +170,6 @@ async function requireAuth(ws, event) {
 }
 
 // KEEP-ALIVE
-const KEEP_ALIVE_INTERVAL = 30000;
 setInterval(() => {
     wss.clients.forEach(ws => {
         if (ws.isAlive === false) {
@@ -169,10 +181,11 @@ setInterval(() => {
         });
     });
 }, KEEP_ALIVE_INTERVAL);
+
 // Cleanup session chết
 setInterval(async () => {
     const expiredSessions = await ActiveUserSession.findAll({
-        where: {last_heartbeat: {[Op.lt]: Date.now() - 90000}}
+        where: {last_heartbeat: {[Op.lt]: Date.now() - SESSION_TIMEOUT}}
     });
     for (const session of expiredSessions) {
         if (!online.has(session.username)) {
@@ -184,7 +197,8 @@ setInterval(async () => {
             });
         }
     }
-}, 60000);
+}, SESSION_CLEANUP_INTERVAL);
+
 wss.on('connection', (ws, req) => {
     ws.isAlive = true;
     ws.on('pong', () => {
@@ -208,7 +222,7 @@ wss.on('connection', (ws, req) => {
                                 data: {username: ws.username, online: false}
                             });
                         }
-                    }, 5000);
+                    }, LOGOUT_DELAY);
                 }
             }
         } catch (err) {
@@ -269,8 +283,8 @@ wss.on('connection', (ws, req) => {
                             console.error(e);
                         }
                     }
-                    const sessionId = 'sess_' + uuidv4().replace(/-/g, '');
-                    const code = 'nlu_' + uuidv4().replace(/-/g, '').substring(0, 10);
+                    const sessionId = SESSION_PREFIX + uuidv4().replace(/-/g, '');
+                    const code = RELOGIN_PREFIX + uuidv4().replace(/-/g, '').substring(0, 10);
                     await ActiveUserSession.create({
                         username: inputUser,
                         session_id: sessionId,
@@ -350,19 +364,6 @@ wss.on('connection', (ws, req) => {
                     send(ws, {status: 'success', event: 'CREATE_ROOM', data: {}});
                     break;
                 }
-                // case 'JOIN_ROOM': {
-                //     if (!await requireAuth(ws, event)) return;
-                //     const name = payload?.name?.trim();
-                //     if (!name) return send(ws, {status: 'fail', event: 'JOIN_ROOM', mes: 'INVALID_INPUT'});
-                //     const room = await Room.findOne({where: {name}});
-                //     if (!room) return send(ws, {status: 'fail', event: 'JOIN_ROOM', mes: 'ROOM_NOT_FOUND'});
-                //     await RoomMember.findOrCreate({
-                //         where: {roomName: name, username: ws.username},
-                //         defaults: {roomName: name, username: ws.username}
-                //     });
-                //     send(ws, {status: 'success', event: 'JOIN_ROOM', data: {name}});
-                //     break;
-                // }
 
                 case 'JOIN_ROOM': {
                     if (!await requireAuth(ws, event)) return;
@@ -598,4 +599,5 @@ wss.on('connection', (ws, req) => {
         }
     });
 });
-console.log('🚀 WebSocket server running at ws://140.238.54.136:8080/chat');
+
+console.log(`🚀 WebSocket server running at ws://${process.env.SERVER_HOST || 'localhost'}:${PORT}${WS_PATH}`);

@@ -1,16 +1,28 @@
-// db.js  hoặc models/index.js
+// db.js
+require('dotenv').config();
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
+// Lấy giá trị từ biến môi trường
+const DB_NAME = process.env.DB_NAME || 'chatapp';
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '6723';
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_DIALECT = process.env.DB_DIALECT || 'mysql';
+const DB_POOL_MAX = parseInt(process.env.DB_POOL_MAX) || 10;
+const DB_POOL_MIN = parseInt(process.env.DB_POOL_MIN) || 0;
+const DB_POOL_ACQUIRE = parseInt(process.env.DB_POOL_ACQUIRE) || 30000;
+const DB_POOL_IDLE = parseInt(process.env.DB_POOL_IDLE) || 10000;
+
 // Kết nối MySQL
-const sequelize = new Sequelize('chatapp', 'root', '6723', {
-  host: 'localhost',
-  dialect: 'mysql',
-  logging: false,           // Tắt log SQL để gọn console (bật true khi debug)
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+  host: DB_HOST,
+  dialect: DB_DIALECT,
+  logging: false,
   pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+    max: DB_POOL_MAX,
+    min: DB_POOL_MIN,
+    acquire: DB_POOL_ACQUIRE,
+    idle: DB_POOL_IDLE
   }
 });
 
@@ -36,7 +48,7 @@ const User = sequelize.define('User', {
 });
 
 // ────────────────────────────────────────────────
-// Model ActiveUserSession (mới – quản lý phiên đăng nhập active)
+// Model ActiveUserSession
 const ActiveUserSession = sequelize.define('ActiveUserSession', {
   id: {
     type: DataTypes.BIGINT,
@@ -143,8 +155,8 @@ const Message = sequelize.define('Message', {
   tableName: 'Messages',
   timestamps: false,
   indexes: [
-    { fields: ['type', 'toTarget', 'timestamp'] },                    // lấy lịch sử theo phòng/người
-    { fields: ['type', 'fromUser', 'toTarget', 'timestamp'] },        // lấy lịch sử 2 người
+    { fields: ['type', 'toTarget', 'timestamp'] },
+    { fields: ['type', 'fromUser', 'toTarget', 'timestamp'] },
     { fields: ['timestamp'] },
   ],
 });
@@ -169,10 +181,9 @@ module.exports = {
 };
 
 // ────────────────────────────────────────────────
-// Đồng bộ database (chỉ chạy 1 lần đầu hoặc khi phát triển)
-// Trong production → nên dùng migration thay vì sync
+// Đồng bộ database
 if (process.env.NODE_ENV !== 'production') {
-  sequelize.sync()   // alter: true → tự cập nhật schema mà không xóa dữ liệu
-    .then(() => console.log('🗄️  Database synced successfully'))
-    .catch(err => console.error('❌  Database sync error:', err));
+  sequelize.sync()
+      .then(() => console.log('🗄️  Database synced successfully'))
+      .catch(err => console.error('❌  Database sync error:', err));
 }
