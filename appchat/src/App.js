@@ -17,73 +17,111 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import ProtectedRoute from './utils/protected-route';
 
-// Firebase configuration
-// const firebaseConfig = {
-//     apiKey: "AIzaSyDwplCXmmoBcfvUhKX1a50Zzn1mQ4F45xw",
-//     authDomain: "appchat-frontend.firebaseapp.com",
-//     databaseURL: "https://appchat-frontend-default-rtdb.firebaseio.com",
-//     projectId: "appchat-frontend",
-//     storageBucket: "appchat-frontend.appspot.com",
-//     messagingSenderId: "494767959162",
-//     appId: "1:494767959162:web:ce7639451c7afcfc64dfc3",
-//     measurementId: "G-9TKZ7BPTB6"
-// };
+// Firebase configuration from environment variables
 const firebaseConfig = {
-    apiKey: "AIzaSyCxc3pKK3YEFWp1dmo18aW_v6QoHZjClzM",
-    authDomain: "appchat-d2ddd.firebaseapp.com",
-    databaseURL: "https://appchat-d2ddd-default-rtdb.firebaseio.com",
-    projectId: "appchat-d2ddd",
-    storageBucket: "appchat-d2ddd.appspot.com",
-    messagingSenderId: "87141689413",
-    appId: "1:87141689413:web:d0750605547247948a1b2c",
-    measurementId: "G-G8BHWR5C3R"
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+// Kiểm tra biến môi trường đã được cấu hình chưa
+const validateFirebaseConfig = () => {
+    const requiredKeys = [
+        'apiKey', 'authDomain', 'databaseURL', 'projectId',
+        'storageBucket', 'messagingSenderId', 'appId'
+    ];
+
+    const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
+
+    if (missingKeys.length > 0) {
+        console.error('❌ Missing Firebase configuration keys:', missingKeys);
+        console.error('📝 Please check your .env file');
+        return false;
+    }
+    return true;
+};
+
+// Initialize Firebase only if config is valid
+let app;
+let analytics;
+let database;
+
+if (validateFirebaseConfig()) {
+    try {
+        app = initializeApp(firebaseConfig);
+        analytics = getAnalytics(app);
+        database = getDatabase(app);
+        console.log('✅ Firebase initialized successfully');
+    } catch (error) {
+        console.error('❌ Firebase initialization error:', error);
+    }
+} else {
+    console.error('❌ Firebase configuration is invalid');
+}
 
 function checkFirebaseConnection() {
+    if (!database) {
+        console.error('❌ Firebase database not initialized');
+        return;
+    }
+
     const dbRef = ref(database);
     get(child(dbRef, 'test')).then((snapshot) => {
         if (snapshot.exists()) {
-            console.log('Firebase connection is successful: ', snapshot.val());
+            console.log('✅ Firebase connection successful:', snapshot.val());
         } else {
-            console.log('No data available');
+            console.log('ℹ️ No data available at test path');
         }
     }).catch((error) => {
-        console.error('Error checking Firebase connection: ', error);
+        console.error('❌ Firebase connection error:', error);
     });
 }
 
-
 function App() {
+    const [wsConnected, setWsConnected] = useState(false);
+
     useEffect(() => {
-        initializeSocket('ws://localhost:8080/chat');
+        // Lấy WebSocket URL từ biến môi trường
+        const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
+
+        if (!wsUrl) {
+            console.error('❌ WebSocket URL not configured in .env file');
+            console.log('📝 Using default URL for development');
+            // Fallback to localhost for development
+            initializeSocket('ws://localhost:8080/chat');
+        } else {
+            console.log('🔌 Connecting to WebSocket:', wsUrl);
+            initializeSocket(wsUrl);
+            setWsConnected(true);
+        }
+
         checkFirebaseConnection();
     }, []);
 
     return (
         <Fragment>
             <BrowserRouter>
-                {/*<Redirect exact from="/" to="/Login"/>*/}
                 <Routes>
                     <Route path="/" element={<Navigate to="/Login" replace />} />
                     <Route path="/Login" element={<Login />} />
                     <Route element={<ProtectedRoute />}>
                         <Route path="/Home" element={<Home />}>
-                            <Route path=":type/:name" element={<>
-                                <ChatHeader />
-                                <ChatContent />
-                            </>} />
-
+                            <Route path=":type/:name" element={
+                                <>
+                                    <ChatHeader />
+                                    <ChatContent />
+                                </>
+                            } />
                         </Route>
                     </Route>
                     <Route path="/Register" element={<Register />} />
                     <Route path="/Sidebar" element={<Sidebar />} />
                     <Route path="/ChatTab" element={<ChatTab />} />
-
                 </Routes>
             </BrowserRouter>
         </Fragment>
