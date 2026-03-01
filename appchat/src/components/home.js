@@ -15,13 +15,14 @@ function Home() {
     const chatContainerRef = useRef(null); // Tạo ref để tham chiếu đến phần tử DOM của chat container
     const navigate = useNavigate(); // Hook để chuyển hướng giữa các route
     const dispatch = useDispatch(); // Hook để gửi action đến store Redux
+    const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
 
     // Kiểm tra và duy trì trạng thái đăng nhập
     useEffect(() => {
         if (!login.status) { // Nếu người dùng chưa đăng nhập
             if (localStorage.getItem("reLogin") !== null) {
                 // Kết nối lại socket nếu có thông tin đăng nhập từ localStorage
-                initializeSocket('ws://140.238.54.136:8080/chat/chat');
+                initializeSocket(wsUrl);
                 reLoginUser(localStorage.getItem("username"), localStorage.getItem("reLogin"));
             } else {
                 navigate("/login"); // Chuyển hướng đến trang đăng nhập nếu không có thông tin đăng nhập
