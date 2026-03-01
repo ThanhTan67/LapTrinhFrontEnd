@@ -13,7 +13,49 @@ const DB_POOL_MIN = parseInt(process.env.DB_POOL_MIN) || 0;
 const DB_POOL_ACQUIRE = parseInt(process.env.DB_POOL_ACQUIRE) || 30000;
 const DB_POOL_IDLE = parseInt(process.env.DB_POOL_IDLE) || 10000;
 
-// Kết nối MySQL
+console.log('📦 Database Config:', {
+  host: DB_HOST,
+  database: DB_NAME,
+  user: DB_USER,
+  dialect: DB_DIALECT
+});
+
+// Tạo kết nối không chỉ định database để kiểm tra và tạo database
+const sequelizeWithoutDb = new Sequelize({
+  host: DB_HOST,
+  dialect: DB_DIALECT,
+  username: DB_USER,
+  password: DB_PASSWORD,
+  logging: console.log
+});
+
+// Hàm tạo database nếu chưa tồn tại
+async function createDatabaseIfNotExists() {
+  try {
+    await sequelizeWithoutDb.authenticate();
+    console.log('✅ Connected to MySQL server');
+
+    // Kiểm tra database có tồn tại không
+    const [results] = await sequelizeWithoutDb.query(
+        `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${DB_NAME}'`
+    );
+
+    if (results.length === 0) {
+      console.log(`📦 Database '${DB_NAME}' not found, creating...`);
+      await sequelizeWithoutDb.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      console.log(`✅ Database '${DB_NAME}' created successfully`);
+    } else {
+      console.log(`📦 Database '${DB_NAME}' already exists`);
+    }
+  } catch (error) {
+    console.error('❌ Error creating database:', error);
+    throw error;
+  } finally {
+    await sequelizeWithoutDb.close();
+  }
+}
+
+// Kết nối với database cụ thể
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   host: DB_HOST,
   dialect: DB_DIALECT,
@@ -163,9 +205,37 @@ const Message = sequelize.define('Message', {
 
 // ────────────────────────────────────────────────
 // Quan hệ (associations)
-RoomMember.belongsTo(Room,   { foreignKey: 'roomName', targetKey: 'name' });
-RoomMember.belongsTo(User,   { foreignKey: 'username', targetKey: 'username' });
-Message.belongsTo(User,      { foreignKey: 'fromUser', targetKey: 'username', as: 'Sender' });
+RoomMember.belongsTo(Room, { foreignKey: 'roomName', targetKey: 'name' });
+RoomMember.belongsTo(User, { foreignKey: 'username', targetKey: 'username' });
+Message.belongsTo(User, { foreignKey: 'fromUser', targetKey: 'username', as: 'Sender' });
+
+// Hàm đồng bộ database (tạo tables)
+async function syncDatabase() {
+  try {
+    console.log('🔄 Syncing database tables...');
+
+    // Sync theo thứ tự để tránh lỗi foreign key
+    await User.sync({ alter: true });
+    console.log('✅ Users table synced');
+
+    await Room.sync({ alter: true });
+    console.log('✅ Rooms table synced');
+
+    await ActiveUserSession.sync({ alter: true });
+    console.log('✅ ActiveUserSessions table synced');
+
+    await RoomMember.sync({ alter: true });
+    console.log('✅ RoomMembers table synced');
+
+    await Message.sync({ alter: true });
+    console.log('✅ Messages table synced');
+
+    console.log('🗄️ All tables synced successfully');
+  } catch (error) {
+    console.error('❌ Error syncing database:', error);
+    throw error;
+  }
+}
 
 // ────────────────────────────────────────────────
 // Export tất cả
@@ -178,12 +248,6 @@ module.exports = {
   Room,
   RoomMember,
   Message,
+  createDatabaseIfNotExists,
+  syncDatabase
 };
-
-// ────────────────────────────────────────────────
-// Đồng bộ database
-if (process.env.NODE_ENV !== 'production') {
-  sequelize.sync()
-      .then(() => console.log('🗄️  Database synced successfully'))
-      .catch(err => console.error('❌  Database sync error:', err));
-}
