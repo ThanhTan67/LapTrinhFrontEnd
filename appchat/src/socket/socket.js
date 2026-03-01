@@ -40,7 +40,8 @@ class WebSocketManager {
         this.reconnectAttempts = 0;
         this.reconnectTimer = null;
         this.isConnecting = false;
-        this.currentUrl = null;
+        this.productionUrl = 'wss://serverchat.up.railway.app/chat'; // URL mặc định cho production
+        this.developmentUrl = 'ws://localhost:8080/chat'; // URL mặc định cho development
 
         this.MAX_RECONNECT_ATTEMPTS = 5;
         this.RECONNECT_DELAY = 3000;
@@ -49,19 +50,32 @@ class WebSocketManager {
         console.log('🏗️ WebSocketManager instance được tạo');
     }
 
-    // Lấy WebSocket URL dựa trên môi trường
+    // Lấy WebSocket URL dựa trên môi trường - QUAN TRỌNG: luôn trả về URL đúng
     getWebSocketUrl(customUrl) {
-        if (customUrl) return customUrl;
+        // Nếu có customUrl từ App.js, ưu tiên dùng nó
+        if (customUrl) {
+            console.log('📌 Sử dụng custom URL:', customUrl);
+            return customUrl;
+        }
 
+        // Nếu không có customUrl, dựa vào môi trường
         if (process.env.NODE_ENV === 'production') {
-            const prodUrl = process.env.REACT_APP_WEBSOCKET_URL;
-            if (prodUrl) {
-                return prodUrl;
+            const envUrl = process.env.REACT_APP_WEBSOCKET_URL;
+            if (envUrl) {
+                console.log('📌 Sử dụng env URL (production):', envUrl);
+                return envUrl;
             }
-            console.warn('⚠️ No REACT_APP_WEBSOCKET_URL in production, using default');
-            return 'wss://serverchat.up.railway.app/chat';
+            console.log('📌 Sử dụng default production URL:', this.productionUrl);
+            return this.productionUrl;
         } else {
-            return 'ws://localhost:8080/chat';
+            // Development: ưu tiên dùng biến môi trường, nếu không có thì dùng localhost
+            const envUrl = process.env.REACT_APP_WEBSOCKET_URL;
+            if (envUrl) {
+                console.log('📌 Sử dụng env URL (development):', envUrl);
+                return envUrl;
+            }
+            console.log('📌 Sử dụng default development URL:', this.developmentUrl);
+            return this.developmentUrl;
         }
     }
 
@@ -103,6 +117,8 @@ class WebSocketManager {
         if (!this.socket) {
             console.warn("⚠️ Socket chưa được khởi tạo, xếp hàng đợi");
             this.messageQueue.push(message);
+            // Thử kết nối lại
+            this.connect();
             return false;
         }
 
@@ -120,7 +136,7 @@ class WebSocketManager {
             // Thử kết nối lại nếu socket đang đóng
             if (this.socket.readyState === WebSocket.CLOSED || this.socket.readyState === WebSocket.CLOSING) {
                 console.log('🔄 Socket đang đóng, thử kết nối lại...');
-                this.connect(this.currentUrl);
+                this.connect();
             }
             return false;
         }
@@ -293,9 +309,8 @@ class WebSocketManager {
             return;
         }
 
-        // Lấy URL
+        // Lấy URL - QUAN TRỌNG: Luôn lấy URL mới nhất
         const url = this.getWebSocketUrl(customUrl);
-        this.currentUrl = url;
 
         if (!url) {
             console.error('❌ Không thể xác định WebSocket URL');
@@ -306,7 +321,10 @@ class WebSocketManager {
         // Đóng kết nối cũ nếu có
         if (this.socket) {
             try {
-                this.socket.close();
+                // Chỉ đóng nếu không phải đang connecting
+                if (this.socket.readyState !== WebSocket.CONNECTING) {
+                    this.socket.close();
+                }
             } catch (error) {
                 console.error('Lỗi đóng socket cũ:', error);
             }
@@ -401,7 +419,8 @@ class WebSocketManager {
                     });
 
                     this.reconnectTimer = setTimeout(() => {
-                        this.connect(this.currentUrl);
+                        // KHI RECONNECT: KHÔNG truyền customUrl, để nó tự lấy URL đúng
+                        this.connect();
                     }, delay);
                 } else {
                     console.error('❌ Không thể kết nối lại sau nhiều lần thử');
@@ -690,7 +709,7 @@ export const checkUserExists = (username) => wsManager.checkUserExists(username)
 export const checkRoomExists = (roomName) => wsManager.checkRoomExists(roomName);
 export const checkUser = (username) => wsManager.checkUser(username);
 
-// Export các biến (getters)
+// Export các biến (getters) - LƯU Ý: Đây là giá trị tại thời điểm export, không phải live
 export const socket = wsManager.getSocket();
 export const isSocketOpen = wsManager.isConnected();
 export const messageQueue = wsManager.getMessageQueue();
