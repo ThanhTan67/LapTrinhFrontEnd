@@ -1,34 +1,37 @@
-import { useEffect, useRef, useState } from 'react'; // Import các hook từ React để sử dụng
-import '../scss/styles-light.min.css'; // Import CSS cho giao diện
-import $ from 'jquery'; // Import thư viện jQuery
-import 'bootstrap/dist/css/bootstrap.min.css'; // Import CSS của Bootstrap
-import 'bootstrap/dist/js/bootstrap.bundle.min'; // Import JavaScript của Bootstrap
-import 'magnific-popup/dist/magnific-popup.css'; // Import CSS của Magnific Popup
-import 'magnific-popup'; // Import JavaScript của Magnific Popup
-import ChatBox from "./Chat/chat"; // Import component ChatBox từ file ./Chat/chat
-import { useNavigate } from "react-router-dom"; // Hook để chuyển hướng giữa các route trong React Router
-import { useDispatch, useSelector } from "react-redux"; // Hooks từ Redux để gửi action và lấy state từ store Redux
-import { initializeSocket, reLoginUser } from "../socket/socket"; // Import các hàm từ file socket/socket.js
+// src/components/home.js
+import { useEffect, useRef } from 'react';
+import '../scss/styles-light.min.css';
+import $ from 'jquery';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
+import 'magnific-popup/dist/magnific-popup.css';
+import 'magnific-popup';
+import ChatBox from "./Chat/chat";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { reLoginUser } from "../socket/socket";
 
 function Home() {
-    const login = useSelector((state) => state.login); // Lấy trạng thái đăng nhập từ store Redux
-    const chatContainerRef = useRef(null); // Tạo ref để tham chiếu đến phần tử DOM của chat container
-    const navigate = useNavigate(); // Hook để chuyển hướng giữa các route
-    const dispatch = useDispatch(); // Hook để gửi action đến store Redux
-    const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
+    const login = useSelector((state) => state.login);
+    const chatContainerRef = useRef(null);
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     // Kiểm tra và duy trì trạng thái đăng nhập
     useEffect(() => {
-        if (!login.status) { // Nếu người dùng chưa đăng nhập
-            if (localStorage.getItem("reLogin") !== null) {
-                // Kết nối lại socket nếu có thông tin đăng nhập từ localStorage
-                initializeSocket(wsUrl);
-                reLoginUser(localStorage.getItem("username"), localStorage.getItem("reLogin"));
+        if (!login.status) {
+            const reLoginCode = localStorage.getItem("reLogin");
+            const username = localStorage.getItem("username");
+
+            if (reLoginCode && username) {
+                console.log('🏠 Home: reLoginUser', username);
+                // CHỈ gọi reLoginUser, KHÔNG gọi initializeSocket
+                reLoginUser(username, reLoginCode);
             } else {
-                navigate("/login"); // Chuyển hướng đến trang đăng nhập nếu không có thông tin đăng nhập
+                navigate("/login");
             }
         }
-    }, [dispatch, navigate, login]); // useEffect này chạy khi dispatch, navigate hoặc login thay đổi
+    }, [dispatch, navigate, login]);
 
     // Các tác vụ DOM và sự kiện
     useEffect(() => {
@@ -40,13 +43,13 @@ function Home() {
 
         // Xử lý toggle navigation
         $('.navigation-toggle').on("click", function (e) {
-            e.stopPropagation(); // Ngăn sự kiện lan truyền
-            $('.navigation').toggleClass("navigation-visible"); // Toggle class để hiển thị/ẩn navigation
+            e.stopPropagation();
+            $('.navigation').toggleClass("navigation-visible");
         });
 
         // Ngăn sự kiện click trên navigation lan truyền ra ngoài
         $('.navigation').on("click", function (e) {
-            e.stopPropagation(); // Ngăn sự kiện lan truyền
+            e.stopPropagation();
         });
 
         // Ẩn navigation khi click vào bất kỳ đâu trên body hoặc html
@@ -59,7 +62,7 @@ function Home() {
             if ($(this).width() > 1200) {
                 $('.navigation').removeClass('navigation-visible');
             }
-        }).trigger('resize'); // Kích hoạt sự kiện resize ngay khi load trang
+        }).trigger('resize');
 
         // Ẩn phần main khi click vào nút chat-hide
         $(".chat-hide").on("click", function () {
@@ -104,7 +107,7 @@ function Home() {
             $(".chat-info-toggle").off("click");
             $(".chat-info-close").off("click");
         };
-    }, []); // useEffect này chỉ chạy một lần khi component được render lần đầu
+    }, []);
 
     // Scroll xuống cuối chat container khi component được render lại
     useEffect(() => {
@@ -116,9 +119,9 @@ function Home() {
 
     return (
         <>
-            <ChatBox /> {/* Hiển thị component ChatBox */}
+            <ChatBox />
         </>
-    )
+    );
 }
 
 export default Home;

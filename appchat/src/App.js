@@ -1,4 +1,4 @@
-// App.js
+// src/App.js
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
@@ -83,34 +83,37 @@ function checkFirebaseConnection() {
 
 function App() {
     const [wsConnected, setWsConnected] = useState(false);
+    const [initDone, setInitDone] = useState(false);
 
     useEffect(() => {
-        // Lấy WebSocket URL từ biến môi trường
-        const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
+        // Chỉ khởi tạo WebSocket một lần duy nhất
+        if (!initDone) {
+            const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
 
-        if (!wsUrl) {
-            console.error('❌ REACT_APP_WEBSOCKET_URL không được cấu hình trong .env');
-            // Fallback cho development
-            if (window.location.hostname === 'localhost') {
-                console.log('📝 Development mode: sử dụng localhost');
-                initializeSocket('ws://localhost:8080/chat');
+            if (!wsUrl) {
+                console.error('❌ REACT_APP_WEBSOCKET_URL không được cấu hình trong .env');
+                if (window.location.hostname === 'localhost') {
+                    console.log('📝 Development mode: sử dụng localhost');
+                    initializeSocket('ws://localhost:8080/chat');
+                } else {
+                    console.error('❌ Không thể kết nối WebSocket: thiếu URL');
+                }
             } else {
-                console.error('❌ Không thể kết nối WebSocket: thiếu URL');
+                console.log('🔌 Khởi tạo WebSocket với URL:', wsUrl);
+                initializeSocket(wsUrl);
+                setWsConnected(true);
             }
-        } else {
-            console.log('🔌 Khởi tạo WebSocket với URL:', wsUrl);
-            initializeSocket(wsUrl);
-            setWsConnected(true);
+
+            // Kiểm tra Firebase
+            checkFirebaseConnection();
+            setInitDone(true);
         }
 
-        // Kiểm tra Firebase
-        checkFirebaseConnection();
-
-        // Cleanup khi unmount
+        // Cleanup khi unmount - KHÔNG đóng socket
         return () => {
-            // Không đóng socket ở đây vì có thể ảnh hưởng đến các tab khác
+            console.log('App unmount - giữ nguyên WebSocket connection');
         };
-    }, []);
+    }, [initDone]);
 
     return (
         <Fragment>

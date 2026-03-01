@@ -1,3 +1,4 @@
+// src/components/Authentication/login.js
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { faUser, faLock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-i
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Authentication.css';
 import { toast } from 'react-toastify';
-import { initializeSocket, loginUser, reLoginUser } from "../../socket/socket";
+import { loginUser, reLoginUser } from "../../socket/socket";
 import $ from 'jquery';
 import { resetStatus } from "../../redux/action/action";
 import { initializeSingleTabAuth, markThisTabAsActive } from '../../utils/single-tab-auth';
@@ -25,15 +26,13 @@ const Login = () => {
     const dispatch = useDispatch();
     const errorKeyRef = useRef(Date.now());
 
-    const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
-
     useEffect(() => {
         console.log('🔍 [DEBUG] LoginStatus:', loginStatus, '| ErrorMsg:', loginErrorMsg);
     }, [loginStatus, loginErrorMsg]);
 
     // ====================== INITIALIZE ======================
     useEffect(() => {
-        initializeSocket(wsUrl);
+        // Chỉ cleanup DOM, KHÔNG gọi initializeSocket
         $('.modal-backdrop').remove();
         $('body').removeClass('modal-open');
         $('body').css('padding-right', '');
@@ -78,7 +77,7 @@ const Login = () => {
         const storedUsername = localStorage.getItem('username');
         if (reLoginCode && storedUsername && loginStatus !== 'success') {
             console.log('Tự động RE_LOGIN cho user:', storedUsername);
-            initializeSocket(wsUrl);
+            // CHỈ gọi reLoginUser, KHÔNG gọi initializeSocket
             reLoginUser(storedUsername, reLoginCode);
         }
     }, [loginStatus]);
@@ -147,7 +146,7 @@ const Login = () => {
                             )}
 
                             <form method="POST" className="register-form" id="login-form" onSubmit={handleSubmit}>
-                                {/* Username - Đồng bộ style */}
+                                {/* Username */}
                                 <div className="form-group" style={{ position: 'relative', marginBottom: '25px' }}>
                                     <label htmlFor="your_username" style={{
                                         position: 'absolute',
@@ -181,7 +180,7 @@ const Login = () => {
                                     />
                                 </div>
 
-                                {/* Password - Đồng bộ style với username */}
+                                {/* Password */}
                                 <div className="form-group" style={{ position: 'relative', marginBottom: '25px' }}>
                                     <label htmlFor="your_pass" style={{
                                         position: 'absolute',
@@ -215,7 +214,6 @@ const Login = () => {
                                             onBlur={(e) => e.target.style.borderBottomColor = '#ccc'}
                                             autoComplete="off"
                                         />
-                                        {/* Icon mắt - Đồng bộ style */}
                                         <button
                                             type="button"
                                             onClick={togglePassword}
@@ -242,7 +240,7 @@ const Login = () => {
                                     </div>
                                 </div>
 
-                                {/* Remember me - Giữ nguyên style hiện tại */}
+                                {/* Remember me */}
                                 <div className="form-group" style={{ marginBottom: '20px' }}>
                                     <input type="checkbox" name="remember-me" id="remember-me" className="agree-term visually-hidden" />
                                     <label htmlFor="remember-me" className="label-agree-term">
