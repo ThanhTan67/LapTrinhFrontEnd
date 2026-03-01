@@ -25,14 +25,15 @@ const Login = () => {
     const dispatch = useDispatch();
     const errorKeyRef = useRef(Date.now());
 
-    // ====================== DEBUG ======================
+    const wsUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/chat';
+
     useEffect(() => {
         console.log('🔍 [DEBUG] LoginStatus:', loginStatus, '| ErrorMsg:', loginErrorMsg);
     }, [loginStatus, loginErrorMsg]);
 
     // ====================== INITIALIZE ======================
     useEffect(() => {
-        initializeSocket('ws://140.238.54.136:8080/chat');
+        initializeSocket(wsUrl);
         $('.modal-backdrop').remove();
         $('body').removeClass('modal-open');
         $('body').css('padding-right', '');
@@ -77,7 +78,7 @@ const Login = () => {
         const storedUsername = localStorage.getItem('username');
         if (reLoginCode && storedUsername && loginStatus !== 'success') {
             console.log('Tự động RE_LOGIN cho user:', storedUsername);
-            initializeSocket('ws://140.238.54.136:8080/chat');
+            initializeSocket(wsUrl);
             reLoginUser(storedUsername, reLoginCode);
         }
     }, [loginStatus]);
