@@ -754,9 +754,7 @@ async function startServer() {
                         });
 
                         const members = await RoomMember.findAll({ where: { roomName: name } });
-                        const userList = members
-                            .filter(m => m.username !== ws.username)
-                            .map(m => ({ name: m.username }));
+                        const userList = members.map(m => ({ name: m.username }));
 
                         send(ws, {
                             status: 'success',

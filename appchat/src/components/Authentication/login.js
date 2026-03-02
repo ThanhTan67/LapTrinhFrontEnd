@@ -1,4 +1,3 @@
-// src/components/Authentication/login.js
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -7,7 +6,7 @@ import { faUser, faLock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-i
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Authentication.css';
 import { toast } from 'react-toastify';
-import { loginUser, reLoginUser } from "../../socket/socket";
+import { loginUser, reLoginUser, initializeSocket } from "../../socket/socket";
 import $ from 'jquery';
 import { resetStatus } from "../../redux/action/action";
 import { initializeSingleTabAuth, markThisTabAsActive } from '../../utils/single-tab-auth';
@@ -26,13 +25,18 @@ const Login = () => {
     const dispatch = useDispatch();
     const errorKeyRef = useRef(Date.now());
 
+    // ====================== KHỞI TẠO SOCKET SAU LOGOUT ======================
     useEffect(() => {
-        console.log('🔍 [DEBUG] LoginStatus:', loginStatus, '| ErrorMsg:', loginErrorMsg);
-    }, [loginStatus, loginErrorMsg]);
+        const socketUrl = 'wss://serverchat.up.railway.app/chat';
+        initializeSocket(socketUrl);
 
-    // ====================== INITIALIZE ======================
+        return () => {
+            // Không đóng socket khi chuyển sang Home
+        };
+    }, []);
+
+    // ====================== CLEANUP MODAL ======================
     useEffect(() => {
-        // Chỉ cleanup DOM, KHÔNG gọi initializeSocket
         $('.modal-backdrop').remove();
         $('body').removeClass('modal-open');
         $('body').css('padding-right', '');
@@ -41,7 +45,7 @@ const Login = () => {
         return cleanup;
     }, [dispatch, navigate]);
 
-    // ====================== SUCCESS ======================
+    // ====================== LOGIN SUCCESS ======================
     useEffect(() => {
         if (loginStatus === 'success') {
             localStorage.setItem('username', username.trim());
@@ -54,17 +58,13 @@ const Login = () => {
     useEffect(() => {
         if (loginStatus === 'error') {
             const msg = loginErrorMsg || 'Đăng nhập thất bại. Vui lòng thử lại.';
-            console.log('🚨 SET ERROR:', msg);
-
             errorKeyRef.current = Date.now();
             setError(msg);
-
             toast.error(msg, {
                 position: "top-right",
                 autoClose: 8000,
                 toastId: `error-${Date.now()}`
             });
-
             localStorage.removeItem('reLogin');
         } else if (loginStatus === 'loading' || loginStatus === 'idle') {
             setError('');
@@ -76,8 +76,6 @@ const Login = () => {
         const reLoginCode = localStorage.getItem('reLogin');
         const storedUsername = localStorage.getItem('username');
         if (reLoginCode && storedUsername && loginStatus !== 'success') {
-            console.log('Tự động RE_LOGIN cho user:', storedUsername);
-            // CHỈ gọi reLoginUser, KHÔNG gọi initializeSocket
             reLoginUser(storedUsername, reLoginCode);
         }
     }, [loginStatus]);
@@ -95,14 +93,9 @@ const Login = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('📤 SUBMIT lần này - Status trước submit:', loginStatus);
-
         if (!username.trim() || !password.trim()) {
             setError('Vui lòng nhập đầy đủ thông tin');
-            toast.warn('Vui lòng nhập đầy đủ thông tin', {
-                autoClose: 4000,
-                toastId: 'warning-empty-fields'
-            });
+            toast.warn('Vui lòng nhập đầy đủ thông tin', { autoClose: 4000 });
             return;
         }
 
@@ -113,7 +106,6 @@ const Login = () => {
     };
 
     const handleCloseError = () => setError('');
-
     const togglePassword = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -137,7 +129,6 @@ const Login = () => {
                         <div className="signin-form">
                             <h2 className="form-title">Đăng nhập</h2>
 
-                            {/* ALERT LỖI */}
                             {error && (
                                 <div key={errorKeyRef.current} className="alert alert-danger alert-dismissible fade show" role="alert">
                                     <strong><i className="fas fa-exclamation-circle"></i></strong> {error}

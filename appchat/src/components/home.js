@@ -108,15 +108,7 @@ function Home() {
             $(".chat-info-close").off("click");
         };
     }, []);
-
-    // Scroll xuống cuối chat container khi component được render lại
-    useEffect(() => {
-        const chatContainer = chatContainerRef.current;
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    });
-
+    
     return (
         <>
             <ChatBox />

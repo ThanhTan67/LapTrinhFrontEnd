@@ -6,8 +6,6 @@ import {
     createRoomError,
     loginSuccess,
     loginError,
-    sendChatToPeopleSuccess,
-    sendChatToPeopleFailure,
     reLoginSuccess,
     reLoginError,
     logoutSuccess,
@@ -24,8 +22,6 @@ import {
     checkUserError,
     getRoomChatMesSuccess,
     getRoomChatMesFailure,
-    sendChatToRoomSuccess,
-    sendChatToRoomFailure,
     appendOwnMessage,
     appendIncomingMessage,
 } from "../redux/action/action";
@@ -44,9 +40,14 @@ const sendMessageInternal = (message) => {
     }
 };
 export const initializeSocket = (url) => {
-    if (socket && socket.readyState !== WebSocket.CLOSED) {
-        return;
+    if (socket && (socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING)) {
+        socket = null;
     }
+
+    if (socket && socket.readyState !== WebSocket.CLOSED) {
+        return; // đã có socket đang mở
+    }
+
     socket = new WebSocket(url);
     window.socket = socket;
     socket.onopen = () => {
@@ -59,14 +60,14 @@ export const initializeSocket = (url) => {
                     data: {event: "HEARTBEAT", data: {}}
                 }));
             }
-        }, 25000); // < 30s
+        }, 25000);
         const username = localStorage.getItem('username');
         const reloginCode = localStorage.getItem('reLogin');
-        // Chỉ relogin nếu tab này đang active
         if (username && reloginCode && isThisTabActive()) {
             reLoginUser(username, reloginCode);
         }
     };
+
     socket.onmessage = (event) => {
         const rawData = event.data;
         if (typeof rawData !== 'string' || !rawData.trim()) {
@@ -151,10 +152,13 @@ export const initializeSocket = (url) => {
                     clearSessionData();
                     store.dispatch(logoutSuccess(response.data || {}));
 
-                    // ĐÓNG SOCKET GRACEFULLY (ngăn reconnect tự động)
-                    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-                        socket.onclose = null;           // Tắt tạm thời reconnect
-                        socket.close(1000, "User logged out");
+                    if (socket) {
+                        socket.onclose = null;
+                        socket.onerror = null;
+                        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                            socket.close(1000, "User logged out");
+                        }
+                        socket = null;
                     }
 
                     toast.info("Đã đăng xuất thành công", { autoClose: 4000 });
@@ -178,8 +182,6 @@ export const initializeSocket = (url) => {
                     });
                 }
                 break;
-            // socket.js - Sửa phần xử lý SEND_CHAT và NEW_CHAT
-
             case "SEND_CHAT": {
                 if (response.status !== "success") {
                     toast.error(response.mes || "Gửi tin nhắn thất bại");
@@ -187,10 +189,6 @@ export const initializeSocket = (url) => {
                 }
                 const msg = response.data;
                 msg.type = msg.type === 1 ? 1 : 0;
-
-                // KHÔNG thay đổi createAt, giữ nguyên format từ server
-                // Server đã format theo giờ Việt Nam rồi
-
                 store.dispatch(appendOwnMessage(msg));
                 break;
             }
@@ -202,17 +200,12 @@ export const initializeSocket = (url) => {
                 }
                 const msg = response.data;
                 msg.type = msg.type === 1 ? 1 : 0;
-
-                // KHÔNG thay đổi createAt, giữ nguyên format từ server
-                // Server đã format theo giờ Việt Nam rồi
-
                 store.dispatch(appendIncomingMessage(msg));
                 break;
             }
 
             case "GET_PEOPLE_CHAT_MES":
                 if (response.status === "success") {
-                    // Giữ nguyên createAt từ server
                     store.dispatch(getPeopleChatMesSuccess(response.data || []));
                 } else {
                     store.dispatch(getPeopleChatMesFailure(response.mes || 'Lỗi tải tin nhắn'));
@@ -222,63 +215,12 @@ export const initializeSocket = (url) => {
 
             case "GET_ROOM_CHAT_MES":
                 if (response.status === "success") {
-                    // Giữ nguyên createAt từ server
                     store.dispatch(getRoomChatMesSuccess(response.data));
                 } else {
                     store.dispatch(getRoomChatMesFailure(response.mes || 'Lỗi tải tin nhắn phòng'));
                     toast.error(response.mes || 'Lỗi tải tin nhắn phòng', {autoClose: 5000});
                 }
                 break;
-            // case "NEW_CHAT": {
-            //     if (response.status !== "success") {
-            //         console.warn("NEW_CHAT failed:", response.mes);
-            //         break;
-            //     }
-            //     const msg = response.data;
-            //     msg.type = msg.type === 1 ? 1 : 0;
-            //     if (msg.createAt) {
-            //         msg.createAt = msg.createAt.replace('T', ' ').slice(0, 19);
-            //     }
-            //     store.dispatch(appendIncomingMessage(msg));
-                // Toast thông báo tin nhắn mới (nếu không ở chat đó)
-                // const rootState = store.getState();
-                // const active = rootState.socket?.active || {name: '', type: null}; // điều chỉnh theo reducer của bạn
-                // const currentUser = localStorage.getItem('username');
-                // let shouldNotify = true;
-                // if (active?.name) {
-                //     if (active.type === 0) {
-                //         shouldNotify = !(
-                //             (active.name === msg.fromUser && msg.toTarget === currentUser) ||
-                //             (active.name === msg.toTarget && msg.fromUser === currentUser)
-                //         );
-                //     } else if (active.type === 1) {
-                //         shouldNotify = msg.toTarget !== active.name;
-                //     }
-                // }
-                // if (shouldNotify) {
-                //     toast.info(`Tin nhắn mới từ ${msg.fromUser}`, {
-                //         autoClose: 4000,
-                //         position: "top-right",
-                //     });
-                // }
-            //     break;
-            // }
-            // case "GET_PEOPLE_CHAT_MES":
-            //     response.status === "success"
-            //         ? store.dispatch(getPeopleChatMesSuccess(response.data || []))
-            //         : store.dispatch(getPeopleChatMesFailure(response.mes || 'Lỗi tải tin nhắn'));
-            //     if (response.status !== "success") {
-            //         toast.error(response.mes || 'Lỗi tải tin nhắn', {autoClose: 5000});
-            //     }
-            //     break;
-            // case "GET_ROOM_CHAT_MES":
-            //     response.status === "success"
-            //         ? store.dispatch(getRoomChatMesSuccess(response.data))
-            //         : store.dispatch(getRoomChatMesFailure(response.mes || 'Lỗi tải tin nhắn phòng'));
-            //     if (response.status !== "success") {
-            //         toast.error(response.mes || 'Lỗi tải tin nhắn phòng', {autoClose: 5000});
-            //     }
-            //     break;
             case "GET_USER_LIST":
                 response.status === "success"
                     ? store.dispatch(getUserListSuccess(response.data || []))
@@ -290,10 +232,8 @@ export const initializeSocket = (url) => {
             case "CREATE_ROOM":
                 if (response.status === "success") {
                     store.dispatch(createRoomSuccess(response.data || {}));
-                    // KHÔNG toast ở đây nữa → để ChatTab xử lý
                 } else {
                     store.dispatch(createRoomError(response.mes || 'Tạo nhóm thất bại'));
-                    // Error thì vẫn để socket toast (vì modal có thể chưa mở)
                     toast.error(response.mes || 'Tạo nhóm thất bại', {autoClose: 5000});
                 }
                 break;
@@ -323,6 +263,7 @@ export const initializeSocket = (url) => {
         toast.warn("Kết nối bị mất. Đang kết nối lại...", {autoClose: 3000});
         setTimeout(() => initializeSocket(url), 5000);
     };
+
     socket.onerror = (error) => {
         console.error("WebSocket error:", error);
         toast.error("Lỗi kết nối WebSocket!", {autoClose: 5000});
@@ -382,7 +323,7 @@ export const checkUserExists = (username) => {
             action: 'onchat',
             data: {
                 event: 'CHECK_USER_EXISTS',
-                data: {username: trimmed} // ← Phải bọc trong "data"
+                data: {username: trimmed}
             }
         });
     });

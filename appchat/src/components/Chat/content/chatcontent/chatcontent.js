@@ -1,4 +1,4 @@
-// ChatContent.js - Phiên bản hoàn chỉnh cuối cùng
+// ChatContent.js
 import React, {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import {useDispatch, useSelector} from "react-redux";
 import {useNavigate, useParams} from "react-router-dom";
@@ -39,22 +39,6 @@ const Avatar = React.memo(({name, size = 'sm'}) => {
 
 // Component Message riêng
 const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onImageClick}) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const messageRef = useRef(null);
-    const animationFrame = useRef(null);
-
-    useEffect(() => {
-        animationFrame.current = requestAnimationFrame(() => {
-            setIsVisible(true);
-        });
-
-        return () => {
-            if (animationFrame.current) {
-                cancelAnimationFrame(animationFrame.current);
-            }
-        };
-    }, []);
-
     const renderContent = useCallback(() => {
         const content = message.content || '';
 
@@ -63,12 +47,7 @@ const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onIm
             const gifUrl = decode(gif);
             return (
                 <div className="message-gif">
-                    <img
-                        src={gifUrl}
-                        alt="GIF"
-                        loading="lazy"
-                        className="gif-image"
-                    />
+                    <img src={gifUrl} alt="GIF" loading="lazy" className="gif-image" />
                 </div>
             );
         }
@@ -77,12 +56,8 @@ const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onIm
             const videoUrl = content.replace('VIDEO:', '');
             return (
                 <div className="message-video">
-                    <video
-                        controls
-                        preload="metadata"
-                        className="video-player"
-                    >
-                        <source src={videoUrl} type="video/mp4"/>
+                    <video controls preload="metadata" className="video-player">
+                        <source src={videoUrl} type="video/mp4" />
                     </video>
                 </div>
             );
@@ -122,13 +97,10 @@ const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onIm
     }, [message.content, onImageClick]);
 
     return (
-        <div
-            ref={messageRef}
-            className={`message-row ${isOwn ? 'own' : ''} ${isVisible ? 'visible' : ''}`}
-        >
+        <div className={`message-row ${isOwn ? 'own' : ''}`}>
             {!isOwn && (
                 <div className="message-avatar1">
-                    <Avatar name={message.fromUser} size="sm"/>
+                    <Avatar name={message.fromUser} size="sm" />
                 </div>
             )}
 
@@ -139,8 +111,7 @@ const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onIm
                     </div>
                 )}
 
-                <div
-                    className={`message-bubble ${isOwn ? 'own' : ''} ${message.content?.startsWith('GIF:') ? 'has-gif' : ''}`}>
+                <div className={`message-bubble ${isOwn ? 'own' : ''} ${message.content?.startsWith('GIF:') ? 'has-gif' : ''}`}>
                     {renderContent()}
                 </div>
 
@@ -149,12 +120,12 @@ const MessageItem = React.memo(({message, isOwn, username, formatTimestamp, onIm
                         {formatTimestamp(message.createAt)}
                     </span>
                     {isOwn && (
-                        <i className="ri-check-double-line read-status"/>
+                        <i className="ri-check-double-line read-status" />
                     )}
                 </div>
             </div>
 
-            {isOwn && <div className="avatar1-spacer"/>}
+            {isOwn && <div className="avatar1-spacer" />}
         </div>
     );
 });
@@ -196,20 +167,31 @@ function ChatContent() {
         const [hour, minute] = timePart.split(':');
         const messageDate = new Date(year, month - 1, day, hour, minute);
         const now = new Date();
+
+        // Reset thời gian để so sánh ngày thuần túy
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const messageDay = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+        const diffDays = Math.floor((today - messageDay) / (24 * 3600000));
+
         const diffMs = now - messageDate;
         const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / (24 * 3600000));
 
         if (diffMins < 1) return "Vừa xong";
         if (diffMins >= 1 && diffMins < 30) return `${diffMins} phút`;
         if (diffMins >= 30 && diffHours < 24) return `${hour}:${minute}`;
+
+        // Kiểm tra chính xác ngày hôm qua
+        if (diffDays === 1) return `Hôm qua ${hour}:${minute}`;
+
         if (diffDays >= 1 && diffDays < 7) {
             const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
             const dayOfWeek = days[messageDate.getDay()];
             return `${dayOfWeek} ${hour}:${minute}`;
         }
+
         if (diffDays >= 7) return `${day}/${month}/${year} ${hour}:${minute}`;
+
         return `${hour}:${minute}`;
     }, []);
 
@@ -354,20 +336,21 @@ function ChatContent() {
         }
     }, [dispatch, navigate, login, username]);
 
-    // Load messages khi chọn chat
     useEffect(() => {
-        if (name && userList) {
-            const target = userList.find(u => u.name === name);
-            if (target) {
-                dispatch(setActiveChat({name: target.name, type: target.type}));
-                if (target.type === 0) {
-                    getPeopleChatMes(name);
-                } else {
-                    getRoomChatMes(name);
-                }
+        if (name) {
+            // Luôn dispatch setActiveChat với name và type mặc định
+            // Type sẽ được xác định dựa trên URL pattern
+            const isGroup = window.location.pathname.includes('/group/');
+            dispatch(setActiveChat({name: name, type: isGroup ? 1 : 0}));
+
+            // Load messages tương ứng
+            if (isGroup) {
+                getRoomChatMes(name);
+            } else {
+                getPeopleChatMes(name);
             }
         }
-    }, [name, userList, dispatch]);
+    }, [name, dispatch]); // Bỏ userList khỏi dependencies
 
     const handleImageClick = useCallback((imageUrl) => {
         setExpandedImage(imageUrl);
