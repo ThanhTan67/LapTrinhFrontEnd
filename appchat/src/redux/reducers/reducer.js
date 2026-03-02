@@ -253,8 +253,6 @@ const socketReducer = (state = initialState, action) => {
         case CHECK_USER_ERROR:
             return {...state, userStatuses: []};
 
-        // socketReducer.js - Sửa case APPEND_OWN_MESSAGE và APPEND_INCOMING_MESSAGE
-
         case GET_ROOM_CHAT_MES_SUCCESS:
         case GET_PEOPLE_CHAT_MES_SUCCESS: {
             const chatName = state.active?.name;

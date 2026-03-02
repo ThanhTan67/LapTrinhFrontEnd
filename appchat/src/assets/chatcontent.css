@@ -1,4 +1,4 @@
-/* style.css - CSS hoàn chỉnh - UI CHUYÊN NGHIỆP */
+/* style.css - CSS hoàn chỉnh - UI CHUYÊN NGHIỆP - FIX HOVER GIẬT CHO TIN NHẮN NGƯỜI GỬI */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.css');
 
 :root {
@@ -13,7 +13,7 @@
     /* Màu nền và viền */
     --chat-bg: #f0f2f5;
     --bubble-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    --bubble-shadow-hover: 0 2px 5px rgba(0, 0, 0, 0.15);
+    --bubble-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
 
     /* Timestamp và date divider */
     --timestamp-color: #65676b;
@@ -33,6 +33,7 @@
     /* Animation */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+    --transition-bounce: 0.2s cubic-bezier(0.2, 0, 0, 1);
 
     /* Border radius */
     --radius-sm: 8px;
@@ -49,15 +50,23 @@
     overflow-x: hidden;
     background: var(--chat-bg);
     position: relative;
-    scroll-behavior: smooth;
-
-    /* Firefox scrollbar */
+    scroll-behavior: auto;
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
     transition: scrollbar-color var(--transition-fast);
+    /* Tối ưu GPU */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
-/* Hiển thị scrollbar khi cần */
+/* Chỉ bật smooth khi gửi tin nhắn của chính mình (JS sẽ xử lý) */
+.chat-content.smooth-scroll {
+    scroll-behavior: smooth;
+}
+
+/* Các phần còn lại của .chat-content giữ nguyên như cũ */
 .chat-content.scrolling,
 .chat-content:hover {
     scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -96,6 +105,9 @@
     flex-direction: column;
     padding: 20px 16px;
     min-height: 100%;
+    /* Tối ưu GPU */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 /* ========== DATE DIVIDER ========== */
@@ -136,19 +148,21 @@
 }
 
 /* ========== MESSAGE ROW ========== */
+/* ========== MESSAGE ROW ========== */
 .message-row {
     display: flex;
     margin-bottom: 8px;
     gap: 8px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all var(--transition-normal);
-    will-change: transform, opacity;
+    /* Tối ưu GPU giữ lại */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .message-row.visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
 }
 
 .message-row.own {
@@ -168,10 +182,13 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: transform var(--transition-fast);
     position: relative;
+    /* Tối ưu GPU */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .avatar1:hover {
-    transform: scale(1.05);
+    transform: scale(1.05) translateZ(0);
 }
 
 .avatar1-sm {
@@ -215,6 +232,9 @@
     flex-direction: column;
     position: relative;
     align-items: flex-start;
+    /* Tối ưu GPU */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .message-row.own .message-content-wrapper {
@@ -244,27 +264,39 @@
     font-size: 14px;
     line-height: 1.5;
     box-shadow: var(--bubble-shadow);
-    transition: all var(--transition-fast);
+    /* FIX: Chỉ transition các thuộc tính cần thiết */
+    transition: box-shadow var(--transition-fast), background-color var(--transition-fast);
     position: relative;
     max-width: 100%;
     width: fit-content;
+    /* Tối ưu GPU */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
+/* Hover cho tin nhắn người khác - chỉ box-shadow */
 .message-bubble:hover {
     box-shadow: var(--bubble-shadow-hover);
-    transform: translateY(-1px);
 }
 
-/* Own message */
+/* Own message - FIX LỖI GIẬT */
 .message-bubble.own {
     background: var(--message-self-bg);
     color: var(--message-self-text);
     border-bottom-right-radius: 4px;
     width: fit-content;
+    /* FIX QUAN TRỌNG: Giữ nguyên transform và chỉ thay đổi background */
+    transform: translateZ(0);
+    transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+/* FIX: Own message hover - KHÔNG transform, KHÔNG gradient phức tạp */
 .message-bubble.own:hover {
-    background: linear-gradient(135deg, var(--message-self-bg) 0%, #0073e6 100%);
+    background: #0073e6; /* Màu đơn giản thay vì gradient */
+    box-shadow: var(--bubble-shadow-hover);
+    /* Đã xóa hoàn toàn transform và gradient */
 }
 
 /* Other message */
@@ -305,14 +337,26 @@
     padding: 0 !important;
     border-radius: var(--radius-md) !important;
     overflow: hidden;
-    transform: none !important;
+    transform: translateZ(0) !important;
+    transition: transform var(--transition-bounce), box-shadow var(--transition-fast) !important;
+    transform-origin: center;
+    will-change: transform;
 }
 
+/* Media messages hover */
 .message-bubble:has(.message-gif):hover,
 .message-bubble:has(.message-image):hover,
 .message-bubble:has(.message-video):hover {
-    transform: scale(1.02) !important;
+    transform: scale(1.02) translateZ(0) !important;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Own media messages - giữ nguyên scale effect nhưng không bị giật */
+.message-bubble.own:has(.message-gif):hover,
+.message-bubble.own:has(.message-image):hover,
+.message-bubble.own:has(.message-video):hover {
+    transform: scale(1.02) translateZ(0) !important;
+    background: transparent !important;
 }
 
 /* GIF */
@@ -326,6 +370,8 @@
     border-radius: var(--radius-md);
     display: block;
     transition: transform var(--transition-fast);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 /* Image */
@@ -340,10 +386,12 @@
     cursor: pointer;
     display: block;
     transition: transform var(--transition-fast);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .image-content:hover {
-    transform: scale(1.02);
+    transform: scale(1.02) translateZ(0);
 }
 
 /* Video */
@@ -364,26 +412,31 @@
     background: var(--message-other-bg);
     border-radius: var(--radius-md);
     box-shadow: var(--bubble-shadow);
-    transition: all var(--transition-fast);
+    transition: box-shadow var(--transition-fast), background-color var(--transition-fast);
     cursor: pointer;
     min-width: 200px;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
+/* File message hover - KHÔNG transform */
 .message-file:hover {
     background: #f5f5f5;
     box-shadow: var(--bubble-shadow-hover);
-    transform: translateY(-1px);
 }
 
+/* Own file message */
 .message-bubble.own .message-file {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* FIX: Own file message hover - chỉ đổi background */
 .message-bubble.own .message-file:hover {
     background: rgba(255, 255, 255, 0.25);
+    /* Đã xóa transform */
 }
 
 .file-icon {
@@ -488,10 +541,12 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: transform var(--transition-fast);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .reaction-badge:hover {
-    transform: scale(1.1);
+    transform: scale(1.1) translateZ(0);
 }
 
 /* ========== TYPING INDICATOR ========== */
@@ -562,11 +617,13 @@
     transition: all var(--transition-fast);
     font-size: 28px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .close-button:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+    transform: scale(1.1) translateZ(0);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -635,6 +692,77 @@
     animation: messageHighlight 2s ease;
 }
 
+/* ========== HIỆU ỨNG CLICK ========== */
+.message-bubble:active {
+    transform: scale(0.98) translateZ(0);
+}
+
+.message-bubble:has(.message-gif):active,
+.message-bubble:has(.message-image):active,
+.message-bubble:has(.message-video):active {
+    transform: scale(0.98) translateZ(0) !important;
+}
+
+/* ========== TOOLTIP ========== */
+.timestamp {
+    position: relative;
+    cursor: default;
+}
+
+.timestamp:hover::after {
+    content: attr(data-full-date);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+    margin-bottom: 4px;
+}
+
+/* ========== LINK PREVIEW ========== */
+.link-preview {
+    margin-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 8px;
+}
+
+.link-preview-card {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+}
+
+.link-preview-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.link-preview-info {
+    flex: 1;
+}
+
+.link-preview-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.link-preview-description {
+    font-size: 11px;
+    color: var(--timestamp-color);
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     :root {
@@ -678,9 +806,14 @@
     .empty-state p {
         font-size: 14px;
     }
+
+    /* Tắt animation trên mobile để tăng performance */
+    .message-row {
+        transition: none;
+    }
 }
 
-/* Dark mode support */
+/* ========== DARK MODE ========== */
 @media (prefers-color-scheme: dark) {
     :root {
         --chat-bg: #1a1a1a;
@@ -715,73 +848,19 @@
     }
 }
 
-/* Hiệu ứng ripple khi click */
-.message-bubble:active {
-    transform: scale(0.98);
-}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 
-.message-bubble:has(.message-gif):active,
-.message-bubble:has(.message-image):active,
-.message-bubble:has(.message-video):active {
-    transform: scale(0.98) !important;
-}
-
-/* Tooltip cho timestamp */
-.timestamp {
-    position: relative;
-    cursor: default;
-}
-
-.timestamp:hover::after {
-    content: attr(data-full-date);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 11px;
-    white-space: nowrap;
-    z-index: 10;
-    pointer-events: none;
-    margin-bottom: 4px;
-}
-
-/* Link preview */
-.link-preview {
-    margin-top: 8px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    padding-top: 8px;
-}
-
-.link-preview-card {
-    display: flex;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: var(--radius-sm);
-    padding: 8px;
-}
-
-.link-preview-image {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: var(--radius-sm);
-}
-
-.link-preview-info {
-    flex: 1;
-}
-
-.link-preview-title {
-    font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 4px;
-}
-
-.link-preview-description {
-    font-size: 11px;
-    color: var(--timestamp-color);
+    .message-row {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
 }

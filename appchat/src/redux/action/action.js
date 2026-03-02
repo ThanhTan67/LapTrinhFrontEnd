@@ -99,11 +99,6 @@ export const updateUserOnlineStatus = (payload, data) => ({
     data
 });
 
-// export const updateChatListOrder = (payload) => ({
-//     type: UPDATE_CHAT_LIST_ORDER,
-//     payload
-// });
-
 export const updateLastMessage = (payload) => ({
     type: UPDATE_LAST_MESSAGE,
     payload
@@ -121,9 +116,6 @@ export const clearAllMessages = () => ({
 export const resetStatus = () => ({ type: RESET_STATUS });
 export const resetAppState = () => ({ type: RESET_APP_STATE });
 
-// Thêm vào cuối file action/action.js
-
-// Chat list order actions
 export const UPDATE_CHAT_LIST_ORDER = 'UPDATE_CHAT_LIST_ORDER';
 export const MOVE_CHAT_TO_TOP = 'MOVE_CHAT_TO_TOP';
 export const ANIMATE_CHAT_MOVEMENT = 'ANIMATE_CHAT_MOVEMENT';

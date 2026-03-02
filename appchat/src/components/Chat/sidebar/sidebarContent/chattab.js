@@ -687,7 +687,7 @@ function ChatTab({toggleSidebar}) {
                     {searchTerm && (
                         <motion.button
                             className="position-absolute border-0 bg-transparent"
-                            style={{right: '12px', top: '10px', zIndex: 10}}
+                            style={{right: '12px', top: '2px', zIndex: 10}}
                             onClick={clearSearch}
                             initial={{opacity: 0, scale: 0}}
                             animate={{opacity: 1, scale: 1}}
