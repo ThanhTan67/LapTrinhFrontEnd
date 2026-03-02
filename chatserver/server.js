@@ -491,18 +491,26 @@ async function startServer() {
 
                     case 'LOGOUT': {
                         if (!await requireAuth(ws, event)) return;
-
                         const username = ws.username;
+                        // Xóa session khỏi database
                         await ActiveUserSession.destroy({ where: { username } });
-                        await forceLogoutUser(username, null, 'Đã đăng xuất');
 
-                        if (online.has(username)) online.delete(username);
-
+                        // Xóa khỏi online map (KHÔNG terminate socket hiện tại)
+                        if (online.has(username)) {
+                            online.delete(username);
+                        }
+                        // Gửi phản hồi thành công
+                        send(ws, { status: 'success', event: 'LOGOUT', data: {} });
+                        // Broadcast offline cho tất cả client khác
+                        broadcastToAll({
+                            status: 'success',
+                            event: 'USER_STATUS',
+                            data: { username, online: false }
+                        });
+                        // Dọn dẹp ws
                         ws.username = null;
                         ws.session_id = null;
-
-                        send(ws, { status: 'success', event: 'LOGOUT', data: {} });
-                        broadcastToAll({ status: 'success', event: 'USER_STATUS', data: { username, online: false } });
+                        console.log(`✅ User ${username} logout thành công (graceful)`);
                         break;
                     }
 

@@ -10,16 +10,16 @@ const Logout = () => {
     const navigate = useNavigate();
     const username = localStorage.getItem('username');
 
-    useEffect(() => {
-        const ws = initializeSocket('ws://localhost:8080/chat');
-        setSocket(ws);
-
-        return () => {
-            if (ws) {
-                ws.close();
-            }
-        };
-    }, []);
+    // useEffect(() => {
+    //     const ws = initializeSocket('wss://serverchat.up.railway.app/chat');
+    //     setSocket(ws);
+    //
+    //     return () => {
+    //         if (ws) {
+    //             ws.close();
+    //         }
+    //     };
+    // }, []);
 
     useEffect(() => {
         if (logoutStatus === 'success') {
