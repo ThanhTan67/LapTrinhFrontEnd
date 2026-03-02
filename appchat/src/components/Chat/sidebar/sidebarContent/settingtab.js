@@ -11,7 +11,7 @@ import {initializeSocket, logoutUsers, socketActions} from '../../../../socket/s
         const navigate = useNavigate();
 
         useEffect(() => {
-            const ws = initializeSocket('ws://localhost:8080/chat');
+            const ws = initializeSocket('wss://serverchat.up.railway.app/chat');
             setSocket(ws);
 
             return () => {

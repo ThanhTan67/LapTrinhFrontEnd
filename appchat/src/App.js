@@ -1,40 +1,122 @@
-// App.js - phần useEffect
-useEffect(() => {
-    let isMounted = true;
-    let initTimeout;
+// App.js
+import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
+import Login from "./components/Authentication/login";
+import Home from "./components/home";
+import Register from "./components/Authentication/Register";
+import Sidebar from "./components/Chat/sidebar/sidebar";
+import { get, child, ref, getDatabase } from "firebase/database";
+import React, { Fragment, useEffect, useState } from 'react';
+import { initializeSocket } from "./socket/socket";
+import ChatTab from "./components/Chat/sidebar/sidebarContent/chattab";
+import ChatBox from "./components/Chat/chat";
+import ChatContent from "./components/Chat/content/chatcontent/chatcontent";
+import ChatHeader from "./components/Chat/content/chatheader/chatheader";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import ProtectedRoute from './utils/protected-route';
 
-    const initialize = () => {
-        if (!isMounted) return;
+// Firebase configuration from environment variables
+const firebaseConfig = {
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+};
 
-        // Lấy URL từ biến môi trường
-        const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
+// Kiểm tra biến môi trường đã được cấu hình chưa
+const validateFirebaseConfig = () => {
+    const requiredKeys = [
+        'apiKey', 'authDomain', 'databaseURL', 'projectId',
+        'storageBucket', 'messagingSenderId', 'appId'
+    ];
 
-        if (!wsUrl) {
-            console.error('❌ REACT_APP_WEBSOCKET_URL không được cấu hình');
-            if (window.location.hostname === 'localhost') {
-                console.log('📝 Development mode: sử dụng localhost');
-                initializeSocket('ws://localhost:8080/chat');
-            } else {
-                // Production: dùng URL mặc định
-                console.log('📝 Production mode: sử dụng default URL');
-                initializeSocket('wss://serverchat.up.railway.app/chat');
-            }
+    const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
+
+    if (missingKeys.length > 0) {
+        console.error('❌ Missing Firebase configuration keys:', missingKeys);
+        console.error('📝 Please check your .env file');
+        return false;
+    }
+    return true;
+};
+
+// Initialize Firebase only if config is valid
+let app;
+let analytics;
+let database;
+
+if (validateFirebaseConfig()) {
+    try {
+        app = initializeApp(firebaseConfig);
+        analytics = getAnalytics(app);
+        database = getDatabase(app);
+        console.log('✅ Firebase initialized successfully');
+    } catch (error) {
+        console.error('❌ Firebase initialization error:', error);
+    }
+} else {
+    console.error('❌ Firebase configuration is invalid');
+}
+
+function checkFirebaseConnection() {
+    if (!database) {
+        console.error('❌ Firebase database not initialized');
+        return;
+    }
+
+    const dbRef = ref(database);
+    get(child(dbRef, 'test')).then((snapshot) => {
+        if (snapshot.exists()) {
+            console.log('✅ Firebase connection successful:', snapshot.val());
         } else {
-            console.log('🔌 Khởi tạo WebSocket với URL:', wsUrl);
-            initializeSocket(wsUrl);
+            console.log('ℹ️ No data available at test path');
         }
+    }).catch((error) => {
+        console.error('❌ Firebase connection error:', error);
+    });
+}
 
-        // Kiểm tra Firebase
+function App() {
+    const [wsConnected, setWsConnected] = useState(false);
+
+    useEffect(() => {
+        const wsUrl = 'wss://serverchat.up.railway.app/chat';
+            console.log('🔌 Connecting to WebSocket:', wsUrl);
+            initializeSocket(wsUrl);
+            setWsConnected(true);
+
         checkFirebaseConnection();
-    };
+    }, []);
 
-    // Delay nhẹ để tránh race condition
-    initTimeout = setTimeout(initialize, 100);
+    return (
+        <Fragment>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<Navigate to="/Login" replace />} />
+                    <Route path="/Login" element={<Login />} />
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="/Home" element={<Home />}>
+                            <Route path=":type/:name" element={
+                                <>
+                                    <ChatHeader />
+                                    <ChatContent />
+                                </>
+                            } />
+                        </Route>
+                    </Route>
+                    <Route path="/Register" element={<Register />} />
+                    <Route path="/Sidebar" element={<Sidebar />} />
+                    <Route path="/ChatTab" element={<ChatTab />} />
+                </Routes>
+            </BrowserRouter>
+        </Fragment>
+    );
+}
 
-    // Cleanup
-    return () => {
-        isMounted = false;
-        clearTimeout(initTimeout);
-        console.log('App unmount - giữ nguyên WebSocket connection');
-    };
-}, []); // Chạy 1 lần duy nhất
+export default App;

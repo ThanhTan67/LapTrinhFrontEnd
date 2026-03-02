@@ -346,7 +346,7 @@ function ChatContent() {
     useEffect(() => {
         if (!login.status) {
             if (localStorage.getItem("reLogin")) {
-                initializeSocket('ws://localhost:8080/chat');
+                initializeSocket('\'wss://serverchat.up.railway.app/chat');
                 reLoginUser(username, localStorage.getItem("reLogin"));
             } else {
                 navigate("/login");

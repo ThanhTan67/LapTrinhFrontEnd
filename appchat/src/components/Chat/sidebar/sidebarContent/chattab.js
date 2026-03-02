@@ -295,7 +295,7 @@ function ChatTab({toggleSidebar}) {
         if (!login?.status) {
             const reLoginToken = localStorage.getItem("reLogin");
             if (reLoginToken) {
-                initializeSocket('ws://localhost:8080/chat');
+                initializeSocket('wss://serverchat.up.railway.app/chat');
                 reLoginUser(currentUser, reLoginToken);
             } else {
                 navigate("/login");
