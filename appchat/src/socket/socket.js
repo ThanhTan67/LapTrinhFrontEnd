@@ -109,7 +109,9 @@ export const initializeSocket = (url) => {
                             socket.send(JSON.stringify({action: "onchat", data: {event: "HEARTBEAT", data: {}}}));
                         }
                     }, 30000);
-                    toast.success("Đăng nhập thành công!", {autoClose: 3000});
+                    setTimeout(() => {
+                        toast.success("Đăng nhập thành công!", {autoClose: 3000});
+                    }, 1000);
                     const username = localStorage.getItem('username');
                     if (username) markThisTabAsActive(username);
                 } else {
@@ -489,4 +491,5 @@ export const getRoomMembers = (roomName) => {
 };
 export const socketActions = {
     logoutUser: () => logoutUsers(),
+
 };
