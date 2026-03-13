@@ -220,16 +220,16 @@ Create MySQL database:
 CREATE DATABASE chatapp;
 ```
 
-### Chat Interface
+## Chat Interface
 
-Add screenshots of the application UI here.
+### Login Page
+![Login](screenshots/chat-login.png)
 
-Example:
+### Chat Modal
+![Modal](screenshots/chat-modal.png)
 
-```
-/screenshots/chat-ui.png
-/screenshots/group-chat.png
-```
+### Chat
+![Chat](screenshots/chat.png)
 
 ---
 
