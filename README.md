@@ -6,6 +6,7 @@
 ![WebSocket](https://img.shields.io/badge/WebSocket-Realtime-red)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+#Overview
 A real-time web chat application built with **React**, **Node.js**, **WebSocket**, and **MySQL**.  
 The application enables users to communicate instantly through private and group messaging with real-time updates.
 
