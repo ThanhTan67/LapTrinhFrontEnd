@@ -246,7 +246,7 @@ Example:
 
 ## Author
 
-**Tan Thanh**
+**Cao Thanh Tan**
 
 Software Engineering Graduate
 Backend / Java Developer
@@ -259,6 +259,3 @@ GitHub: [https://github.com/yourusername](https://github.com/yourusername)
 
 This project is licensed under the MIT License.
 
-```
-
----
