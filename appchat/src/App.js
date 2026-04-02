@@ -86,7 +86,7 @@ function App() {
     const [wsConnected, setWsConnected] = useState(false);
 
     useEffect(() => {
-        const wsUrl = 'wss://serverchat.up.railway.app/chat';
+        const wsUrl = 'wss://appchat-server.up.railway.app';
             console.log('🔌 Connecting to WebSocket:', wsUrl);
             initializeSocket(wsUrl);
             setWsConnected(true);

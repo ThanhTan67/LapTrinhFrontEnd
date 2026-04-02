@@ -1,4 +1,4 @@
-// db.js
+// db.js (chỉ thay đổi phần syncDatabase)
 require('dotenv').config();
 const { Sequelize, DataTypes, Op } = require('sequelize');
 
@@ -224,26 +224,55 @@ RoomMember.belongsTo(Room, { foreignKey: 'roomName', targetKey: 'name' });
 RoomMember.belongsTo(User, { foreignKey: 'username', targetKey: 'username' });
 Message.belongsTo(User, { foreignKey: 'fromUser', targetKey: 'username', as: 'Sender' });
 
-// Hàm đồng bộ database (tạo tables)
+// Hàm kiểm tra bảng có tồn tại không
+async function tableExists(tableName) {
+  const [result] = await sequelize.query(
+      `SELECT COUNT(*) as count FROM information_schema.tables 
+     WHERE table_schema = '${DB_NAME}' AND table_name = '${tableName}'`
+  );
+  return result[0].count > 0;
+}
+
+// Hàm đồng bộ database (chỉ tạo bảng nếu chưa tồn tại)
 async function syncDatabase() {
   try {
     console.log('🔄 Syncing database tables...');
 
-    // Sync theo thứ tự để tránh lỗi foreign key
-    await User.sync({ alter: true });
-    console.log('✅ Users table synced');
+    // Kiểm tra và tạo từng bảng, KHÔNG dùng alter
+    if (!(await tableExists('Users'))) {
+      await User.sync();
+      console.log('✅ Users table created');
+    } else {
+      console.log('✅ Users table already exists');
+    }
 
-    await Room.sync({ alter: true });
-    console.log('✅ Rooms table synced');
+    if (!(await tableExists('Rooms'))) {
+      await Room.sync();
+      console.log('✅ Rooms table created');
+    } else {
+      console.log('✅ Rooms table already exists');
+    }
 
-    await ActiveUserSession.sync({ alter: true });
-    console.log('✅ ActiveUserSessions table synced');
+    if (!(await tableExists('ActiveUserSessions'))) {
+      await ActiveUserSessions.sync();
+      console.log('✅ ActiveUserSessions table created');
+    } else {
+      console.log('✅ ActiveUserSessions table already exists');
+    }
 
-    await RoomMember.sync({ alter: true });
-    console.log('✅ RoomMembers table synced');
+    if (!(await tableExists('RoomMembers'))) {
+      await RoomMember.sync();
+      console.log('✅ RoomMembers table created');
+    } else {
+      console.log('✅ RoomMembers table already exists');
+    }
 
-    await Message.sync({ alter: true });
-    console.log('✅ Messages table synced');
+    if (!(await tableExists('Messages'))) {
+      await Message.sync();
+      console.log('✅ Messages table created');
+    } else {
+      console.log('✅ Messages table already exists');
+    }
 
     console.log('🗄️ All tables synced successfully');
   } catch (error) {
