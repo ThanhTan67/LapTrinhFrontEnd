@@ -13,11 +13,24 @@ const DB_POOL_MIN = parseInt(process.env.DB_POOL_MIN) || 0;
 const DB_POOL_ACQUIRE = parseInt(process.env.DB_POOL_ACQUIRE) || 30000;
 const DB_POOL_IDLE = parseInt(process.env.DB_POOL_IDLE) || 10000;
 
+// Cấu hình SSL từ biến môi trường
+const DB_SSL = process.env.DB_SSL === 'true';
+const DB_SSL_REJECT_UNAUTHORIZED = process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true';
+
+// Tạo cấu hình SSL
+const sslConfig = DB_SSL ? {
+  ssl: {
+    require: true,
+    rejectUnauthorized: DB_SSL_REJECT_UNAUTHORIZED
+  }
+} : {};
+
 console.log('📦 Database Config:', {
   host: DB_HOST,
   database: DB_NAME,
   user: DB_USER,
-  dialect: DB_DIALECT
+  dialect: DB_DIALECT,
+  ssl: DB_SSL ? 'enabled' : 'disabled'
 });
 
 // Tạo kết nối không chỉ định database để kiểm tra và tạo database
@@ -26,7 +39,8 @@ const sequelizeWithoutDb = new Sequelize({
   dialect: DB_DIALECT,
   username: DB_USER,
   password: DB_PASSWORD,
-  logging: console.log
+  logging: console.log,
+  dialectOptions: sslConfig
 });
 
 // Hàm tạo database nếu chưa tồn tại
@@ -65,7 +79,8 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
     min: DB_POOL_MIN,
     acquire: DB_POOL_ACQUIRE,
     idle: DB_POOL_IDLE
-  }
+  },
+  dialectOptions: sslConfig
 });
 
 // ────────────────────────────────────────────────
