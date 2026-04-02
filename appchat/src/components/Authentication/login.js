@@ -27,7 +27,7 @@ const Login = () => {
 
     // ====================== KHỞI TẠO SOCKET SAU LOGOUT ======================
     useEffect(() => {
-        const socketUrl = 'wss://serverchat.up.railway.app/chat';
+        const socketUrl = 'wss://appchat-server.up.railway.app';
         initializeSocket(socketUrl);
 
         return () => {
