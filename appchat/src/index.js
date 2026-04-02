@@ -7,7 +7,7 @@ import {Provider} from "react-redux";
 import store from "./redux/store/store";
 import {initializeSocket} from "./socket/socket";
 
-initializeSocket('wss://appchat-server.up.railway.app');
+initializeSocket('wss://appchat-server.up.railway.app/chat');
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
