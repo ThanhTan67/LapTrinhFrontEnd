@@ -254,7 +254,7 @@ async function syncDatabase() {
     }
 
     if (!(await tableExists('ActiveUserSessions'))) {
-      await ActiveUserSessions.sync();
+      await await ActiveUserSession.sync();
       console.log('✅ ActiveUserSessions table created');
     } else {
       console.log('✅ ActiveUserSessions table already exists');
